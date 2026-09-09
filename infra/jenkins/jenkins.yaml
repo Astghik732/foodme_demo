@@ -1,0 +1,46 @@
+jenkins:
+  systemMessage: "FoodMe CI — unsecured-but-local Jenkins for the agentic-QA course."
+  numExecutors: 2
+  mode: NORMAL
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_ID:-admin}"
+          password: "${JENKINS_ADMIN_PASSWORD:-admin}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+security:
+  queueItemAuthenticator:
+    authenticators:
+      - global:
+          strategy: triggeringUsersAuthorizationStrategy
+
+unclassified:
+  location:
+    url: http://localhost:8080/
+
+# Seeds a single declarative pipeline job, "foodme-ci", that checks out the
+# repo (mounted read-only into this container at /workspace/foodme) via a
+# local file:// git remote and runs the root Jenkinsfile.
+jobs:
+  - script: >
+      pipelineJob('foodme-ci') {
+        description('FoodMe CI pipeline — mirrors .github/workflows/ci.yml. Repo mounted read-only at /workspace/foodme.')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('file:///workspace/foodme')
+                }
+                branch('*/main')
+              }
+            }
+            scriptPath('Jenkinsfile')
+            lightweight(true)
+          }
+        }
+      }

@@ -1,0 +1,11 @@
+{
+  "generic": {
+    "home": "Home",
+    "explore": "Explore",
+    "kitchen": "Chef",
+    "checkout": "Checkout",
+    "order_success": "Order confirmed",
+    "order_failed": "Order failed",
+    "tracking": "Tracking"
+  }
+}

@@ -1,0 +1,203 @@
+{
+  "_format": "Xray Cloud GraphQL createTest mutation variables — see README.md",
+  "_note": "Xray Cloud has no single bulk-JSON 'create these manual tests' REST endpoint. Each object below is a ready-to-use `variables` payload for the createTest GraphQL mutation (https://xray.cloud.getxray.app/api/v2/graphql). Run scripts/import-tests.sh to create them one call per test case.",
+  "projectKey": "FM",
+  "tests": [
+    {
+      "testKey": "TC-01",
+      "variables": {
+        "testType": { "name": "Manual" },
+        "steps": [
+          { "action": "Open the storefront and navigate to Explore.", "data": "Seed dataset loaded (8 chefs, 1 INACTIVE).", "result": "The chef grid loads." },
+          { "action": "Count the number of chefs shown across all pages.", "data": "", "result": "Exactly the number of ACTIVE chefs (7)." },
+          { "action": "Look for the known INACTIVE seeded chef.", "data": "", "result": "That chef does not appear on any page." },
+          { "action": "Call GET /api/chef/active?page=0&size=50 directly.", "data": "", "result": "count equals the number of ACTIVE chefs, matching the UI." }
+        ],
+        "jira": {
+          "fields": {
+            "summary": "Explore shows only active chefs",
+            "project": { "key": "FM" },
+            "labels": ["explore", "regression"]
+          }
+        }
+      }
+    },
+    {
+      "testKey": "TC-02",
+      "variables": {
+        "testType": { "name": "Manual" },
+        "steps": [
+          { "action": "Call GET /api/chef/active?page=0&size=3.", "data": "", "result": "Returns 3 chefs and count: 7." },
+          { "action": "Record the id of every chef returned on page 0.", "data": "", "result": "" },
+          { "action": "Call GET /api/chef/active?page=1&size=3.", "data": "", "result": "Returns 3 different chefs, no overlap with page 0." },
+          { "action": "Call GET /api/chef/active?page=2&size=3.", "data": "", "result": "Returns the remaining active chef(s), no repeats, none missing." },
+          { "action": "Sum ids seen across all pages against the full active chef id list.", "data": "", "result": "Every active chef id appears exactly once." }
+        ],
+        "jira": {
+          "fields": {
+            "summary": "Pagination covers every active chef exactly once",
+            "project": { "key": "FM" },
+            "labels": ["explore", "pagination", "regression"]
+          }
+        }
+      }
+    },
+    {
+      "testKey": "TC-03",
+      "variables": {
+        "testType": { "name": "Manual" },
+        "steps": [
+          { "action": "From Explore, open a known chef's page.", "data": "", "result": "Page loads without error." },
+          { "action": "Compare displayed name and cuisine to seed data.", "data": "", "result": "Match the English (en) values." },
+          { "action": "Compare displayed rating.", "data": "", "result": "Matches the seeded value, rounded to one decimal place." },
+          { "action": "Compare displayed delivery fee and free-delivery threshold.", "data": "", "result": "Match deliveryPrice and freeDeliveryFrom." },
+          { "action": "Compare displayed delivery methods.", "data": "", "result": "Match the seeded deliveryMethods for this chef." }
+        ],
+        "jira": {
+          "fields": {
+            "summary": "Chef page header shows correct chef details",
+            "project": { "key": "FM" },
+            "labels": ["chef-page", "regression"]
+          }
+        }
+      }
+    },
+    {
+      "testKey": "TC-04",
+      "variables": {
+        "testType": { "name": "Manual" },
+        "steps": [
+          { "action": "Call GET /api/dish/tags?chefId=<id> for the chef.", "data": "", "result": "Tags ordered by priorityIndex ascending." },
+          { "action": "Open the chef's page on the storefront.", "data": "", "result": "Menu sections appear in the same order." },
+          { "action": "Compare dishes shown per section to GET /api/chef/{id}'s dishes[] filtered by tag.", "data": "", "result": "Only ACTIVE dishes appear, in API order." },
+          { "action": "Confirm the known INACTIVE dish for this chef.", "data": "", "result": "It does not appear in any section." }
+        ],
+        "jira": {
+          "fields": {
+            "summary": "Menu is grouped by tag in priority order, active dishes only",
+            "project": { "key": "FM" },
+            "labels": ["chef-page", "menu", "regression"]
+          }
+        }
+      }
+    },
+    {
+      "testKey": "TC-05",
+      "variables": {
+        "testType": { "name": "Manual" },
+        "steps": [
+          { "action": "Open a chef's menu and click a dish card.", "data": "", "result": "Dish detail modal opens." },
+          { "action": "Observe initial quantity in the modal.", "data": "", "result": "Equals minimumOrderCount (or 1 if unset)." },
+          { "action": "Attempt to decrease below minimumOrderCount.", "data": "", "result": "Quantity does not go below the minimum." },
+          { "action": "Increase quantity by 2 and check the line total.", "data": "", "result": "Line total equals price × quantity." },
+          { "action": "Click Add to cart.", "data": "", "result": "Modal closes; cart contains this dish at the selected quantity." }
+        ],
+        "jira": {
+          "fields": {
+            "summary": "Dish modal respects minimum order count when adding to cart",
+            "project": { "key": "FM" },
+            "labels": ["chef-page", "cart", "regression"]
+          }
+        }
+      }
+    },
+    {
+      "testKey": "TC-06",
+      "variables": {
+        "testType": { "name": "Manual" },
+        "steps": [
+          { "action": "Open the cart with one dish line at quantity 1.", "data": "", "result": "Line visible at quantity 1." },
+          { "action": "Click the decrement control on that line.", "data": "", "result": "Confirmation prompt appears." },
+          { "action": "Confirm removal.", "data": "", "result": "Line is removed from the cart." },
+          { "action": "If this was the only line, observe the cart.", "data": "", "result": "Cart shows the empty-cart state." }
+        ],
+        "jira": {
+          "fields": {
+            "summary": "Decrementing below the minimum order count removes the cart line",
+            "project": { "key": "FM" },
+            "labels": ["cart", "regression"]
+          }
+        }
+      }
+    },
+    {
+      "testKey": "TC-07",
+      "variables": {
+        "testType": { "name": "Manual" },
+        "steps": [
+          { "action": "Add dishes until the subtotal exactly equals freeDeliveryFrom.", "data": "e.g. chef marta-k, freeDeliveryFrom: 8000", "result": "Cart subtotal reads exactly the threshold value." },
+          { "action": "Observe the delivery fee line for a DELIVERY order.", "data": "", "result": "Delivery is shown as free." },
+          { "action": "Proceed to checkout and place the order.", "data": "", "result": "totalPrice equals dish subtotal only, no delivery fee." },
+          { "action": "Repeat with subtotal one unit below the threshold.", "data": "", "result": "Delivery fee is charged." },
+          { "action": "Repeat with subtotal one unit above the threshold.", "data": "", "result": "Delivery is free." }
+        ],
+        "jira": {
+          "fields": {
+            "summary": "Delivery is free once the subtotal reaches the free-delivery threshold",
+            "project": { "key": "FM" },
+            "labels": ["cart", "pricing", "boundary", "regression"]
+          }
+        }
+      }
+    },
+    {
+      "testKey": "TC-08",
+      "variables": {
+        "testType": { "name": "Manual" },
+        "steps": [
+          { "action": "Go to checkout with DELIVERY selected, leave all fields empty.", "data": "", "result": "Place order is disabled." },
+          { "action": "Fill city, street, building only.", "data": "", "result": "Place order remains disabled." },
+          { "action": "Fill receiver name and phone number as well.", "data": "", "result": "Place order becomes enabled." },
+          { "action": "Clear the phone number field.", "data": "", "result": "Place order becomes disabled again." },
+          { "action": "Enter an implausible phone number.", "data": "e.g. 123", "result": "Validation error shown; Place order stays disabled." }
+        ],
+        "jira": {
+          "fields": {
+            "summary": "Checkout requires mandatory fields before submission is enabled",
+            "project": { "key": "FM" },
+            "labels": ["checkout", "validation", "regression"]
+          }
+        }
+      }
+    },
+    {
+      "testKey": "TC-09",
+      "variables": {
+        "testType": { "name": "Manual" },
+        "steps": [
+          { "action": "Submit a valid order via the storefront checkout UI.", "data": "", "result": "Request sent has paymentType: CASH and succeeds." },
+          { "action": "POST /api/order directly with paymentType: CARD.", "data": "otherwise-valid payload", "result": "400, message indicating only cash is supported." },
+          { "action": "POST /api/order with paymentType omitted.", "data": "", "result": "400 validation error, order not created." },
+          { "action": "Confirm no order was created for the rejected attempts.", "data": "", "result": "Only the one order from step 1 exists." }
+        ],
+        "jira": {
+          "fields": {
+            "summary": "Order creation rejects any payment type other than cash",
+            "project": { "key": "FM" },
+            "labels": ["checkout", "api", "regression"]
+          }
+        }
+      }
+    },
+    {
+      "testKey": "TC-10",
+      "variables": {
+        "testType": { "name": "Manual" },
+        "steps": [
+          { "action": "Place an order and note the returned order number.", "data": "", "result": "Confirmation shows status: NEW." },
+          { "action": "Go to /tracking/<number>.", "data": "", "result": "Shows NEW status and matching items." },
+          { "action": "In admin, move the order NEW to ACCEPTED.", "data": "", "result": "Transition succeeds." },
+          { "action": "Reload the tracking page.", "data": "", "result": "Status now shows ACCEPTED." },
+          { "action": "In admin, move to DELIVERED; reload tracking.", "data": "", "result": "Status shows DELIVERED." }
+        ],
+        "jira": {
+          "fields": {
+            "summary": "Tracking page shows the order's current status by number",
+            "project": { "key": "FM" },
+            "labels": ["checkout", "tracking", "regression"]
+          }
+        }
+      }
+    }
+  ]
+}

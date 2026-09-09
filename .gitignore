@@ -1,0 +1,62 @@
+# --- Java / Gradle ---------------------------------------------------------
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+*.war
+*.ear
+.gradle/
+**/build/
+!**/src/**/build/
+out/
+.gradletasknamecache
+
+# --- Node --------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.pnpm-store/
+
+# --- Vite ---------------------------------------------------------------
+dist/
+dist-ssr/
+*.local
+
+# --- Playwright ---------------------------------------------------------
+test-results/
+playwright-report/
+playwright/.cache/
+blob-report/
+
+# --- Env / secrets -------------------------------------------------------
+.env
+.env.*
+!.env.example
+.mcp.json
+!.mcp.json.example
+
+# --- IDE ------------------------------------------------------------------
+.idea/
+.vscode/
+*.iml
+*.iws
+.project
+.classpath
+.settings/
+
+# --- OS cruft ---------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Jenkins / infra runtime data -----------------------------------------
+infra/**/data/
+
+# Instructor-only: never on main (see instructor branch)
+instructor/
+docs/planted-defects.md
+
+# Machine-local compose override (host-port remap for this workstation)
+infra/docker-compose.local.yml
