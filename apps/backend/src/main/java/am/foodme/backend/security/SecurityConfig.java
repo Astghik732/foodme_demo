@@ -23,10 +23,9 @@ public class SecurityConfig {
 
     private final JwtService jwtService;
 
-    // Browser origins allowed to call the API. Defaults to the documented
-    // storefront/admin dev ports; override with FOODME_CORS_ORIGINS (comma-separated)
-    // when running the containers on non-default host ports.
-    @Value("${foodme.cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:5174}")
+    // Browser origins allowed to call the API. Defaults live in application.properties;
+    // override with FOODME_CORS_ALLOWED_ORIGINS (comma-separated) for Vercel hosts.
+    @Value("${foodme.cors.allowed-origins}")
     private List<String> allowedOrigins;
 
     public SecurityConfig(JwtService jwtService) {
@@ -63,7 +62,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(allowedOrigins);
+        // Course lab: FOODME_CORS_ALLOWED_ORIGINS=* avoids CORS chicken-and-egg
+        // when students deploy Vercel before knowing final URLs.
+        boolean open = allowedOrigins.size() == 1 && "*".equals(allowedOrigins.get(0).trim());
+        if (open) {
+            configuration.setAllowedOriginPatterns(List.of("*"));
+        } else {
+            configuration.setAllowedOrigins(allowedOrigins);
+        }
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

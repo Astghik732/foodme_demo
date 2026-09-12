@@ -40,6 +40,32 @@ GlitchTip/Jenkins state):
 docker compose -f infra/docker-compose.yml --profile core --profile observability --profile ci down -v
 ```
 
+### Database / Flyway reset (required after migration rewrite)
+
+FoodMe ships a single init migration:
+`apps/backend/src/main/resources/db/migration/V1__init.sql` (schema + dish
+additions + 6 anonymized chefs from the production backup). If you previously
+ran older `V1`–`V4` files, Flyway checksums will conflict — wipe the Postgres
+volume and start clean:
+
+```bash
+docker compose -f infra/docker-compose.yml --profile core down -v
+docker compose -f infra/docker-compose.yml --profile core up -d --build
+```
+
+To regenerate the seed from `~/Downloads/db_backup_2026-02-10.sql` (or another
+dump path):
+
+```bash
+python3 scripts/extract_seed_from_backup.py --backup ~/Downloads/db_backup_2026-02-10.sql
+# then re-merge scripts/generated_seed.sql into V1__init.sql (schema + seed)
+```
+
+### Student cloud deploys
+
+Each QA deploys their own free instance (Neon + Render + Vercel). Guide is
+written for non-developers: [`docs/deployment.md`](deployment.md).
+
 Check what's healthy:
 
 ```bash

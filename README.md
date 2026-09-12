@@ -48,6 +48,14 @@ a JWT-protected `/admin/**` for the back office. The frontend talks to
 [`docs/api-contract.md`](docs/api-contract.md) for the frozen request/response
 shapes.
 
+## Cloud lab deploy (your own free copy)
+
+Each student can deploy a personal instance in ~15 minutes (browser only):
+see the click-by-click guide in [`docs/deployment.md`](docs/deployment.md).
+
+Stack: **Neon** (DB) + **Render** (API) + **Vercel** (storefront + admin).
+Lab-only — tear down after the course.
+
 ## Quickstart
 
 Requires Docker and Docker Compose.
