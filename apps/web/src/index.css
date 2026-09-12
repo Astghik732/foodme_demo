@@ -3,52 +3,61 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    /* Soft Structuralism — warm off-white base, deep zinc text, amber brand accent */
+    --background: 40 20% 98%;
+    --foreground: 220 15% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 220 15% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --popover-foreground: 220 15% 12%;
+    --primary: 220 15% 12%;
+    --primary-foreground: 40 20% 98%;
+    --secondary: 220 10% 95%;
+    --secondary-foreground: 220 15% 12%;
+    --muted: 220 10% 94%;
+    --muted-foreground: 220 8% 48%;
+    --accent: 220 10% 94%;
+    --accent-foreground: 220 15% 12%;
     --success: 142 72% 29%;
     --warning: 24.6 95% 53.1%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-    --radius: 0.5rem;
+    --border: 220 10% 90%;
+    --input: 220 10% 90%;
+    --ring: 220 15% 12%;
+    --radius: 0.75rem;
+
+    /* Warm amber brand accent */
+    --brand: 32 95% 52%;
+    --brand-foreground: 0 0% 100%;
+    --brand-muted: 32 95% 95%;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --background: 220 15% 8%;
+    --foreground: 40 20% 96%;
+    --card: 220 15% 10%;
+    --card-foreground: 40 20% 96%;
+    --popover: 220 15% 10%;
+    --popover-foreground: 40 20% 96%;
+    --primary: 40 20% 96%;
+    --primary-foreground: 220 15% 8%;
+    --secondary: 220 12% 16%;
+    --secondary-foreground: 40 20% 96%;
+    --muted: 220 12% 16%;
+    --muted-foreground: 220 8% 55%;
+    --accent: 220 12% 16%;
+    --accent-foreground: 40 20% 96%;
     --success: 142 72% 29%;
     --warning: 24.6 95% 53.1%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --border: 220 12% 20%;
+    --input: 220 12% 20%;
+    --ring: 220 8% 65%;
+    --brand: 32 95% 52%;
+    --brand-foreground: 0 0% 100%;
+    --brand-muted: 32 30% 18%;
   }
 }
 
@@ -70,6 +79,19 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scroll entry animation helper */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.7s cubic-bezier(0.32, 0.72, 0, 1),
+      transform 0.7s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -98,5 +120,27 @@
   }
   .animate-scroll {
     animation: scroll 40s linear infinite;
+  }
+
+  /* Double-bezel card shell */
+  .bezel-outer {
+    padding: 6px;
+    border-radius: 1.5rem;
+    background: hsl(var(--muted) / 0.6);
+    border: 1px solid hsl(var(--border) / 0.8);
+  }
+  .bezel-inner {
+    border-radius: calc(1.5rem - 6px);
+    background: hsl(var(--card));
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9);
+    overflow: hidden;
+  }
+
+  /* Diffusion shadow */
+  .shadow-diffuse {
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.07);
+  }
+  .shadow-diffuse-lg {
+    box-shadow: 0 32px 64px -20px rgba(0, 0, 0, 0.1);
   }
 }

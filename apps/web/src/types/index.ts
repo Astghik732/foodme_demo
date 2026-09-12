@@ -8,6 +8,27 @@ export interface ITranslation {
 export type DeliveryMethod = "DELIVERY" | "TAKEAWAY";
 export type PaymentType = "CASH";
 
+
+export interface DishAdditionDto {
+  id: number;
+  nameEn: string;
+  nameHy: string;
+  nameRu: string;
+  price: number;
+}
+
+export interface CreateOrderDishAdditionDto {
+  additionId: number;
+}
+
+export interface OrderDishAdditionDto {
+  id: number;
+  nameEn: string;
+  nameHy: string;
+  nameRu: string;
+  price: number;
+}
+
 export interface DishTagDto {
   id: number;
   nameEn: string;
@@ -31,6 +52,7 @@ export interface DishDto {
   priorityIndex: number;
   chefId: number;
   dishTagDto: DishTagDto;
+  additions?: DishAdditionDto[];
 }
 
 export interface ExploreChefResponseDto {
@@ -87,6 +109,7 @@ export interface AddressDto {
 export interface CreateOrderDishDto {
   dishId: number;
   quantity: number;
+  additions?: CreateOrderDishAdditionDto[];
 }
 
 export interface OrderDto {
@@ -115,6 +138,7 @@ export interface OrderDishDto {
   price: number;
   url: string;
   quantity: number;
+  additions?: OrderDishAdditionDto[];
 }
 
 export interface FullOrderDto {
@@ -152,6 +176,7 @@ export interface ICartItem {
   price: number;
   url: string;
   quantity: number;
+  additions?: DishAdditionDto[];
   limitations: {
     minQuantity: number;
   };

@@ -11,9 +11,11 @@ test("cart item survives a page reload right after add-to-cart", async ({ page }
   await expect(page.getByRole("button", { name: "Add to cart" })).toBeVisible();
   await page.getByRole("button", { name: "Add to cart" }).click();
 
-  // FM-FLAKE-05
+  // FM-FLAKE-05 FIX: Wait for cart panel to update before reloading
+  const cartPanel = page.locator("aside.uc-panel");
+  await expect(cartPanel.locator(".cic_root")).toHaveCount(1);
+
   await page.reload();
 
-  const cartPanel = page.locator("aside.uc-panel");
   await expect(cartPanel.locator(".cic_root")).toHaveCount(1);
 });

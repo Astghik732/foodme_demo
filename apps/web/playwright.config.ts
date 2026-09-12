@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5180";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -19,7 +19,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev -- --port 5173",
+    command: "npm run dev -- --port 5180",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
   },

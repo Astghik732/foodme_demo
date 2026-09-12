@@ -97,12 +97,36 @@ public class OrderService {
             orderDish.setNameAm(dish.getNameAm());
             orderDish.setNameRu(dish.getNameRu());
             orderDish.setUrl(dish.getUrl());
+            
             orderDish.setPrice(dish.getPrice());
             orderDish.setQuantity(item.getQuantity());
+
+            double dishTotal = dish.getPrice();
+            if (item.getAdditions() != null && dish.getAdditions() != null) {
+                List<am.foodme.backend.model.OrderDishAddition> orderAdditions = new ArrayList<>();
+                for (am.foodme.backend.dto.CreateOrderDishAdditionDto addDto : item.getAdditions()) {
+                    am.foodme.backend.model.DishAddition matchingAddition = dish.getAdditions().stream()
+                            .filter(a -> a.getId().equals(addDto.getAdditionId()))
+                            .findFirst().orElse(null);
+                    if (matchingAddition != null) {
+                        am.foodme.backend.model.OrderDishAddition oda = new am.foodme.backend.model.OrderDishAddition();
+                        oda.setOrderDish(orderDish);
+                        oda.setNameEn(matchingAddition.getNameEn());
+                        oda.setNameAm(matchingAddition.getNameAm());
+                        oda.setNameRu(matchingAddition.getNameRu());
+                        oda.setPrice(matchingAddition.getPrice());
+                        orderAdditions.add(oda);
+                        dishTotal += matchingAddition.getPrice();
+                    }
+                }
+                orderDish.setAdditions(orderAdditions);
+            }
+
             orderDishes.add(orderDish);
 
             // FM-BUG-01
-            subtotal += (int) (dish.getPrice() * item.getQuantity());
+            subtotal += (int) (dishTotal * item.getQuantity());
+
         }
         order.setOrderDishList(orderDishes);
 

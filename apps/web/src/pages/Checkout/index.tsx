@@ -51,7 +51,7 @@ export default function Checkout() {
               note: "",
             }
           : null,
-      createOrderDishes: items.map((item) => ({ dishId: item.id, quantity: item.quantity })),
+      createOrderDishes: items.map((item) => ({ dishId: item.id, quantity: item.quantity, additions: item.additions?.map(a => ({ additionId: a.id })) })),
     };
 
     try {

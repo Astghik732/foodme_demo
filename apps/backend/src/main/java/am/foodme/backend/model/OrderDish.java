@@ -1,6 +1,7 @@
 package am.foodme.backend.model;
 
 import jakarta.persistence.*;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,6 +11,9 @@ import lombok.Setter;
 @Getter
 @Setter
 public class OrderDish {
+
+    @OneToMany(mappedBy = "orderDish", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<OrderDishAddition> additions;
 
     @Id
     @SequenceGenerator(name = "order_dish_id_seq", sequenceName = "foodme.order_dish_id_seq", allocationSize = 1)

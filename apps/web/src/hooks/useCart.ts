@@ -25,21 +25,26 @@ export async function clearCart(): Promise<void> {
 }
 
 export async function addDishToCart(dish: DishDto): Promise<void> {
-  const uid = `${dish.chefId}-${dish.id}`;
+  const additionIds = dish.additions?.map(a => a.id).sort().join(',') || '';
+  const uid = `${dish.chefId}-${dish.id}-${additionIds}`;
   const existing = await db.products.get(uid);
   if (existing) {
     await db.products.update(uid, { quantity: existing.quantity + 1 });
     return;
   }
+  
+  const itemTotal = dish.price + (dish.additions?.reduce((sum, a) => sum + a.price, 0) || 0);
+
   const item: ICartItem = {
     id: dish.id,
     uid,
     chefId: dish.chefId,
     nameEn: dish.nameEn,
-    price: dish.price,
+    price: itemTotal,
     url: dish.url,
     quantity: Math.max(dish.minimumOrderCount, 1),
     limitations: { minQuantity: 1 },
+    additions: dish.additions
   };
   await db.products.add(item);
 }

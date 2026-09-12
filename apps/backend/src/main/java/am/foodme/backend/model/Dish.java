@@ -1,6 +1,7 @@
 package am.foodme.backend.model;
 
 import jakarta.persistence.*;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,6 +16,9 @@ public class Dish {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "dish_id_seq")
     @Column(name = "id", nullable = false)
     private Long id;
+
+    @OneToMany(mappedBy = "dish", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<DishAddition> additions;
 
     @Column(name = "name_en")
     private String nameEn;
@@ -60,4 +64,20 @@ public class Dish {
     @ManyToOne
     @JoinColumn(name = "dish_tag_id")
     private DishTag dishTag;
+
+    public DishTag getDishTag() {
+        return dishTag;
+    }
+
+    public void setDishTag(DishTag dishTag) {
+        this.dishTag = dishTag;
+    }
+
+    public List<DishAddition> getAdditions() {
+        return additions;
+    }
+
+    public void setAdditions(List<DishAddition> additions) {
+        this.additions = additions;
+    }
 }

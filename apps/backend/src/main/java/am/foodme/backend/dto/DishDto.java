@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -13,6 +15,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class DishDto {
+    private List<DishAdditionDto> additions;
     private Long id;
     private String nameEn;
     private String nameHy;
@@ -49,6 +52,17 @@ public class DishDto {
         dto.setPriorityIndex(entity.getPriorityIndex());
         dto.setChefId(entity.getChef() != null ? entity.getChef().getId() : null);
         dto.setDishTagDto(DishTagDto.mapEntityToDto(entity.getDishTag()));
+        if (entity.getAdditions() != null) {
+            dto.setAdditions(entity.getAdditions().stream().map(a -> {
+                DishAdditionDto add = new DishAdditionDto();
+                add.setId(a.getId());
+                add.setNameEn(a.getNameEn());
+                add.setNameAm(a.getNameAm());
+                add.setNameRu(a.getNameRu());
+                add.setPrice(a.getPrice());
+                return add;
+            }).toList());
+        }
         return dto;
     }
 

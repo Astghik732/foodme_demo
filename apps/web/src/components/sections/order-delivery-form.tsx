@@ -14,6 +14,10 @@ interface OrderDeliveryFormProps {
   onSubmit: (values: CheckoutFormValues) => void;
 }
 
+function FieldGroup({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-col gap-2">{children}</div>;
+}
+
 export function OrderDeliveryForm({ submitting, onSubmit }: OrderDeliveryFormProps) {
   const {
     register,
@@ -37,80 +41,116 @@ export function OrderDeliveryForm({ submitting, onSubmit }: OrderDeliveryFormPro
   const deliveryMethod = watch("deliveryMethod");
 
   return (
-    <form className="odf_form space-y-5" onSubmit={handleSubmit(onSubmit)}>
-      <DeliveryTypeInput
-        value={deliveryMethod}
-        onChange={(v: DeliveryMethod) => setValue("deliveryMethod", v)}
-      />
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="receiverName">Full name</Label>
-          <Input id="receiverName" className="mt-1" {...register("receiverName")} />
-          {errors.receiverName && <p className="mt-1 text-xs text-red-600">{errors.receiverName.message}</p>}
-        </div>
-        <div>
-          <Label htmlFor="receiverPhoneNumber">Phone</Label>
-          <PhoneInput id="receiverPhoneNumber" className="mt-1" {...register("receiverPhoneNumber")} />
-          {errors.receiverPhoneNumber && (
-            <p className="mt-1 text-xs text-red-600">{errors.receiverPhoneNumber.message}</p>
-          )}
+    <form className="odf_form space-y-6" onSubmit={handleSubmit(onSubmit)}>
+      {/* Delivery type */}
+      <div className="bezel-outer">
+        <div className="bezel-inner p-4">
+          <DeliveryTypeInput
+            value={deliveryMethod}
+            onChange={(v: DeliveryMethod) => setValue("deliveryMethod", v)}
+          />
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="receiverEmail">Email</Label>
-        <Input id="receiverEmail" type="email" className="mt-1" {...register("receiverEmail")} />
-        {errors.receiverEmail && <p className="mt-1 text-xs text-red-600">{errors.receiverEmail.message}</p>}
+      {/* Contact info */}
+      <div className="bezel-outer">
+        <div className="bezel-inner p-5 space-y-4">
+          <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-semibold">Contact</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FieldGroup>
+              <Label htmlFor="receiverName" className="text-sm font-medium text-zinc-700">Full name</Label>
+              <Input id="receiverName" placeholder="Ara Petrosyan" {...register("receiverName")} />
+              {errors.receiverName && (
+                <p className="text-xs text-red-600">{errors.receiverName.message}</p>
+              )}
+            </FieldGroup>
+            <FieldGroup>
+              <Label htmlFor="receiverPhoneNumber" className="text-sm font-medium text-zinc-700">Phone</Label>
+              <PhoneInput id="receiverPhoneNumber" {...register("receiverPhoneNumber")} />
+              {errors.receiverPhoneNumber && (
+                <p className="text-xs text-red-600">{errors.receiverPhoneNumber.message}</p>
+              )}
+            </FieldGroup>
+          </div>
+          <FieldGroup>
+            <Label htmlFor="receiverEmail" className="text-sm font-medium text-zinc-700">Email</Label>
+            <Input id="receiverEmail" type="email" placeholder="ara@example.com" {...register("receiverEmail")} />
+            {errors.receiverEmail && (
+              <p className="text-xs text-red-600">{errors.receiverEmail.message}</p>
+            )}
+          </FieldGroup>
+        </div>
       </div>
 
+      {/* Address — only for DELIVERY */}
       {deliveryMethod === "DELIVERY" && (
-        <div className="odf_address grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="city">City</Label>
-            <Input id="city" className="mt-1" {...register("city")} />
-            {errors.city && <p className="mt-1 text-xs text-red-600">{errors.city.message}</p>}
-          </div>
-          <div>
-            <Label htmlFor="street">Street</Label>
-            <Input id="street" className="mt-1" {...register("street")} />
-            {errors.street && <p className="mt-1 text-xs text-red-600">{errors.street.message}</p>}
-          </div>
-          <div>
-            <Label htmlFor="building">Building</Label>
-            <Input id="building" className="mt-1" {...register("building")} />
-          </div>
-          <div>
-            <Label htmlFor="apartment">Apartment</Label>
-            <Input id="apartment" className="mt-1" {...register("apartment")} />
+        <div className="bezel-outer">
+          <div className="bezel-inner p-5 space-y-4">
+            <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-semibold">Delivery address</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FieldGroup>
+                <Label htmlFor="city" className="text-sm font-medium text-zinc-700">City</Label>
+                <Input id="city" placeholder="Yerevan" {...register("city")} />
+                {errors.city && <p className="text-xs text-red-600">{errors.city.message}</p>}
+              </FieldGroup>
+              <FieldGroup>
+                <Label htmlFor="street" className="text-sm font-medium text-zinc-700">Street</Label>
+                <Input id="street" placeholder="Barekamutyan" {...register("street")} />
+                {errors.street && <p className="text-xs text-red-600">{errors.street.message}</p>}
+              </FieldGroup>
+              <FieldGroup>
+                <Label htmlFor="building" className="text-sm font-medium text-zinc-700">Building</Label>
+                <Input id="building" placeholder="14" {...register("building")} />
+              </FieldGroup>
+              <FieldGroup>
+                <Label htmlFor="apartment" className="text-sm font-medium text-zinc-700">Apartment</Label>
+                <Input id="apartment" placeholder="37" {...register("apartment")} />
+              </FieldGroup>
+            </div>
           </div>
         </div>
       )}
 
-      <div>
-        <Label htmlFor="note">Note</Label>
-        <textarea
-          id="note"
-          className="mt-1 w-full rounded-xl border border-zinc-200 p-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          rows={3}
-          {...register("note")}
-        />
+      {/* Note */}
+      <div className="bezel-outer">
+        <div className="bezel-inner p-5 space-y-2">
+          <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-semibold">Note (optional)</p>
+          <textarea
+            id="note"
+            className="w-full rounded-xl border border-zinc-200 bg-white p-3 text-sm text-zinc-900 placeholder:text-zinc-400 resize-none focus-visible:outline-none focus-visible:border-zinc-400 focus-visible:ring-4 focus-visible:ring-zinc-100 transition-all duration-200"
+            rows={3}
+            placeholder="Allergies, instructions, gate code..."
+            {...register("note")}
+          />
+        </div>
       </div>
 
-      <div>
-        <Label>Payment</Label>
-        <RadioGroup defaultValue="CASH" className="mt-2">
-          <div className="flex items-center gap-2">
-            <RadioGroupItem value="CASH" id="payment-cash" />
-            <Label htmlFor="payment-cash" className="font-normal">
-              Cash on delivery
-            </Label>
-          </div>
-        </RadioGroup>
+      {/* Payment */}
+      <div className="bezel-outer">
+        <div className="bezel-inner px-5 py-4">
+          <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-semibold mb-3">Payment</p>
+          <RadioGroup defaultValue="CASH" className="mt-2">
+            <div className="flex items-center gap-3">
+              <RadioGroupItem value="CASH" id="payment-cash" />
+              <Label htmlFor="payment-cash" className="font-normal text-zinc-700 cursor-pointer">
+                Cash on delivery
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
       </div>
 
-      <Button type="submit" className="w-full" disabled={submitting}>
-        {submitting ? "Placing order..." : "Place order"}
+      <Button
+        type="submit"
+        size="lg"
+        className="w-full rounded-full font-semibold"
+        disabled={submitting}
+      >
+        {submitting ? (
+          <span className="opacity-70">Placing order...</span>
+        ) : (
+          "Place order"
+        )}
       </Button>
     </form>
   );

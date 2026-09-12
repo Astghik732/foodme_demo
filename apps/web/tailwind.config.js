@@ -4,7 +4,8 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     fontFamily: {
-      sans: ["Noto Sans Armenian", "Open Sans", "Noto Sans", "Helvetica", "Arial", "sans-serif"],
+      sans: ["Plus Jakarta Sans", "Noto Sans Armenian", "Noto Sans", "sans-serif"],
+      display: ["Outfit", "Plus Jakarta Sans", "sans-serif"],
     },
     spacing: {
       0: "0px",
@@ -36,6 +37,9 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        "2xl": "1rem",
+        "3xl": "1.5rem",
+        "4xl": "2rem",
       },
       colors: {
         background: "hsl(var(--background))",
@@ -75,6 +79,11 @@ export default {
         warning: {
           DEFAULT: "hsl(var(--warning))",
         },
+        brand: {
+          DEFAULT: "hsl(var(--brand))",
+          foreground: "hsl(var(--brand-foreground))",
+          muted: "hsl(var(--brand-muted))",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -88,10 +97,20 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "fade-up": {
+          "0%": { opacity: "0", transform: "translateY(24px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-up": "fade-up 0.7s cubic-bezier(0.32,0.72,0,1) both",
+        shimmer: "shimmer 2s linear infinite",
       },
     },
   },

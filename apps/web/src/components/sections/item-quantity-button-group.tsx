@@ -1,6 +1,5 @@
 import { memo, type MouseEvent } from "react";
 import { Minus, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 interface ItemQuantityButtonGroupProps {
   min?: number;
@@ -18,28 +17,40 @@ const ItemQuantityButtonGroup_ = ({
   max,
 }: ItemQuantityButtonGroupProps) => {
   return (
-    <div className="flex items-center gap-3 fm-qty-grp">
-      <Button
-        size="icon"
-        variant="muted"
+    <div className="flex items-center gap-2 fm-qty-grp">
+      <button
+        type="button"
         onClick={onDecrement}
         disabled={quantity === min}
         aria-label="Decrease quantity"
-        className="w-[32px] h-[32px]"
+        className={[
+          "h-7 w-7 rounded-full flex items-center justify-center",
+          "text-zinc-500 border border-zinc-200 bg-white",
+          "transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]",
+          "hover:border-zinc-300 hover:text-zinc-900",
+          "active:scale-[0.94]",
+          "disabled:opacity-30 disabled:cursor-not-allowed",
+        ].join(" ")}
       >
-        <Minus size={14} />
-      </Button>
-      <p className="text-lg font-extrabold text-zinc-950">{quantity}</p>
-      <Button
-        size="icon"
-        variant="muted"
+        <Minus size={12} strokeWidth={2} />
+      </button>
+      <p className="w-5 text-center text-sm font-bold text-zinc-900">{quantity}</p>
+      <button
+        type="button"
         onClick={onIncrement}
         disabled={quantity === max}
         aria-label="Increase quantity"
-        className="w-[32px] h-[32px]"
+        className={[
+          "h-7 w-7 rounded-full flex items-center justify-center",
+          "text-zinc-500 border border-zinc-200 bg-white",
+          "transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]",
+          "hover:border-zinc-300 hover:text-zinc-900",
+          "active:scale-[0.94]",
+          "disabled:opacity-30 disabled:cursor-not-allowed",
+        ].join(" ")}
       >
-        <Plus size={14} />
-      </Button>
+        <Plus size={12} strokeWidth={2} />
+      </button>
     </div>
   );
 };

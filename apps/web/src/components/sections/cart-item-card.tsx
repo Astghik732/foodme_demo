@@ -23,6 +23,12 @@ export function CartItemCard({ item }: CartItemCardProps) {
       <div className="cic_body flex-1">
         <p className="text-sm font-extrabold text-zinc-800">{item.nameEn}</p>
         <p className="text-sm font-semibold text-zinc-800">{formatAmd(item.price)}</p>
+        {item.additions && item.additions.length > 0 && (
+          <p className="text-xs text-zinc-500">
+            + {item.additions.map(a => a.nameEn).join(", ")}
+          </p>
+        )}
+
       </div>
       <ItemQuantityButtonGroup
         quantity={item.quantity}
