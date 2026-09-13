@@ -43,10 +43,11 @@ docker compose -f infra/docker-compose.yml --profile core --profile observabilit
 ### Database / Flyway reset (required after migration rewrite)
 
 FoodMe ships a single init migration:
-`apps/backend/src/main/resources/db/migration/V1__init.sql` (schema + dish
-additions + 6 anonymized chefs from the production backup). If you previously
-ran older `V1`–`V4` files, Flyway checksums will conflict — wipe the Postgres
-volume and start clean:
+`apps/backend/src/main/resources/db/migration/V1__init.sql` (schema including
+customer accounts, dish additions, generated chef images, workshop
+prompt-injection samples, and 6 anonymized chefs). Flyway checksums change
+when V1 is rewritten — wipe the Postgres volume and start clean if this
+database already ran any prior V1 (including the old split `V1`–`V4` set):
 
 ```bash
 docker compose -f infra/docker-compose.yml --profile core down -v
