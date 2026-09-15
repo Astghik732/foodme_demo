@@ -99,6 +99,40 @@ Grafana Labs publishes an official MCP server, `mcp-grafana`.
 Config (`.mcp.json.example` → `grafana`) points `GRAFANA_URL` at this
 project's compose-provisioned Grafana on `:3002`.
 
+## Render
+
+Render publishes an official MCP server, `render-oss/render-mcp-server`. Since
+each student deploys their FoodMe lab on Render (see `docs/deployment.md`),
+this server lets an agent read that deployment's **logs and deploy status**
+directly — the cloud counterpart to the local Grafana monitoring exercise.
+
+- **Repo:** `github.com/render-oss/render-mcp-server`
+- **Run it** via Docker (matches the config below) or a downloaded binary:
+
+  ```bash
+  docker run --rm -i -e RENDER_API_KEY \
+    ghcr.io/render-oss/render-mcp-server
+  ```
+
+- **Auth:** `RENDER_API_KEY` — create one in Render under **Account Settings →
+  API Keys**.
+- **What it exposes:** listing/inspecting services, reading **logs**, deploy
+  history and status, metrics, and **read-only** SQL queries against your
+  Render Postgres.
+- **Use it read-only.** For this course you only need to *read* logs and
+  deploy status. The server is early-access and also exposes write/destructive
+  tools (triggering deploys, editing environment variables), so treat the key
+  with care and never share it. It cannot create free-tier services — students
+  create their stack from the `render.yaml` blueprint, then use this server to
+  observe it.
+
+Config (`.mcp.json.example` → `render`) passes `RENDER_API_KEY` through as an
+environment variable, never a literal.
+
+**Exercise:** ask your agent for your deployed app's recent logs and last
+deploy status via the Render MCP server, e.g. *"show the last 50 log lines and
+the latest deploy status for `foodme-backend`."*
+
 ## GitHub
 
 The official GitHub MCP server, used for the PR-review workflow and for
@@ -131,6 +165,7 @@ Claude Code (or put them in a gitignored `.env` your shell loads):
 | `GRAFANA_URL` | Grafana MCP server |
 | `GRAFANA_SERVICE_ACCOUNT_TOKEN` | Grafana MCP server |
 | `GITHUB_PERSONAL_ACCESS_TOKEN` | GitHub MCP server |
+| `RENDER_API_KEY` | Render MCP server |
 | `XRAY_CLIENT_ID`, `XRAY_CLIENT_SECRET` | Xray REST/GraphQL API (no MCP server) |
 
 The Atlassian server needs no environment variable — it authenticates
