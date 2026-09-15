@@ -9,25 +9,28 @@ export function Logo({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-label="FoodMe"
     >
-      <circle cx="16" cy="16" r="14" fill="#18181b" />
-      <path
-        d="M10 12c0-2.2 1.8-4 4-4s4 1.8 4 4M10 12h8M10 12v9a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-9"
-        stroke="#fff"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <path d="M20 9v13" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
+      {/* Uber Eats–style wordmark: black + green accent */}
       <text
-        x="36"
-        y="21"
-        fontFamily="'Noto Sans', 'Open Sans', sans-serif"
-        fontSize="17"
+        x="0"
+        y="23"
+        fontFamily="'Plus Jakarta Sans', 'Uber Move', system-ui, sans-serif"
+        fontSize="20"
         fontWeight="800"
-        fill="#18181b"
+        fill="#000"
+        letterSpacing="-0.5"
       >
-        Food<tspan fill="#71717a">Me</tspan>
+        Food
+      </text>
+      <text
+        x="52"
+        y="23"
+        fontFamily="'Plus Jakarta Sans', 'Uber Move', system-ui, sans-serif"
+        fontSize="20"
+        fontWeight="800"
+        fill="#06C167"
+        letterSpacing="-0.5"
+      >
+        Me
       </text>
     </svg>
   );

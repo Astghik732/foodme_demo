@@ -17,36 +17,36 @@ const ItemQuantityButtonGroup_ = ({
   max,
 }: ItemQuantityButtonGroupProps) => {
   return (
-    <div className="flex items-center gap-2 fm-qty-grp">
+    <div className="fm-qty-grp inline-flex items-center gap-0.5 rounded-full border border-zinc-200/90 bg-white p-0.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
       <button
         type="button"
         onClick={onDecrement}
         disabled={quantity === min}
         aria-label="Decrease quantity"
         className={[
-          "h-7 w-7 rounded-full flex items-center justify-center",
-          "text-zinc-500 border border-zinc-200 bg-white",
+          "flex h-7 w-7 items-center justify-center rounded-full",
+          "text-zinc-500",
           "transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]",
-          "hover:border-zinc-300 hover:text-zinc-900",
-          "active:scale-[0.94]",
-          "disabled:opacity-30 disabled:cursor-not-allowed",
+          "hover:bg-zinc-50 hover:text-zinc-900",
+          "active:scale-[0.92]",
+          "disabled:cursor-not-allowed disabled:opacity-30",
         ].join(" ")}
       >
         <Minus size={12} strokeWidth={2} />
       </button>
-      <p className="w-5 text-center text-sm font-bold text-zinc-900">{quantity}</p>
+      <p className="min-w-6 text-center text-sm font-bold tabular-nums text-zinc-900">{quantity}</p>
       <button
         type="button"
         onClick={onIncrement}
         disabled={quantity === max}
         aria-label="Increase quantity"
         className={[
-          "h-7 w-7 rounded-full flex items-center justify-center",
-          "text-zinc-500 border border-zinc-200 bg-white",
+          "flex h-7 w-7 items-center justify-center rounded-full",
+          "text-zinc-500",
           "transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]",
-          "hover:border-zinc-300 hover:text-zinc-900",
-          "active:scale-[0.94]",
-          "disabled:opacity-30 disabled:cursor-not-allowed",
+          "hover:bg-zinc-50 hover:text-zinc-900",
+          "active:scale-[0.92]",
+          "disabled:cursor-not-allowed disabled:opacity-30",
         ].join(" ")}
       >
         <Plus size={12} strokeWidth={2} />

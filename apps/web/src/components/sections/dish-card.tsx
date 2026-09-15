@@ -1,39 +1,56 @@
+import type { MouseEvent } from "react";
 import { Plus } from "lucide-react";
 import { formatAmd } from "@/lib/utils";
+import { SafeImage } from "@/components/ui/safe-image";
+import { addDishToCart } from "@/hooks/useCart";
 import type { DishDto } from "@/types";
 
 interface DishCardProps {
   dish: DishDto;
   onOpen: (dish: DishDto) => void;
+  onChefMismatch?: (dish: DishDto, quantity: number) => void;
 }
 
-export function DishCard({ dish, onOpen }: DishCardProps) {
+export function DishCard({ dish, onOpen, onChefMismatch }: DishCardProps) {
+  const quickAdd = async (event: MouseEvent) => {
+    event.stopPropagation();
+    const result = await addDishToCart(dish, Math.max(dish.minimumOrderCount ?? 1, 1));
+    if (result === "mismatch") onChefMismatch?.(dish, Math.max(dish.minimumOrderCount ?? 1, 1));
+  };
+
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(dish)}
-      className="dc_card group h-full w-full text-start overflow-hidden rounded-xl border bg-card text-card-foreground shadow transition-shadow hover:shadow-md flex flex-col"
-    >
-      <div className="w-full relative">
-        <img src={dish.url} alt={dish.nameEn} className="w-full object-cover h-[200px]" />
-      </div>
-      <div className="flex flex-col w-full px-4 pb-4 pt-3 gap-3 flex-1">
-        <div className="flex flex-col gap-2">
-          <p className="text-zinc-900 text-base font-bold">{dish.nameEn}</p>
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => onOpen(dish)}
+        className="dc_card group flex w-full items-stretch justify-between gap-4 rounded-xl border border-zinc-200 bg-white p-3 text-start transition-shadow hover:shadow-diffuse-lg sm:p-4"
+      >
+        <div className="min-w-0 flex-1 py-0.5">
+          <p className="text-[15px] font-bold leading-snug text-zinc-900">{dish.nameEn}</p>
+          <p className="mt-1 text-[15px] font-medium tabular-nums text-zinc-700">
+            {formatAmd(dish.price)}
+          </p>
+          {dish.portionEn && dish.portionEn.trim() && dish.portionEn.trim() !== "1" && (
+            <p className="mt-0.5 text-xs font-medium text-zinc-400">{dish.portionEn}</p>
+          )}
           {dish.descriptionEn && (
-            <p className="text-zinc-500 text-sm font-normal line-clamp-2">{dish.descriptionEn}</p>
+            <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-zinc-500">
+              {dish.descriptionEn}
+            </p>
           )}
         </div>
-        <div className="flex items-center justify-between mt-auto pt-2">
-          <p className="text-zinc-800 text-base font-semibold">{formatAmd(dish.price)}</p>
-          <span
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-secondary text-primary transition-colors group-hover:bg-secondary/80"
-            aria-hidden="true"
-          >
-            <Plus size={16} />
-          </span>
+        <div className="relative h-[104px] w-[120px] shrink-0 overflow-hidden rounded-lg bg-zinc-100 sm:h-[112px] sm:w-[132px]">
+          <SafeImage src={dish.url} alt={dish.nameEn} className="h-full w-full object-cover" />
         </div>
-      </div>
-    </button>
+      </button>
+      <button
+        type="button"
+        onClick={(event) => void quickAdd(event)}
+        aria-label={`Add ${dish.nameEn} to cart`}
+        className="absolute bottom-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-white text-zinc-900 shadow-diffuse-lg transition-transform hover:scale-105 sm:bottom-5 sm:right-5"
+      >
+        <Plus size={18} strokeWidth={2.5} />
+      </button>
+    </div>
   );
 }

@@ -14,3 +14,7 @@ export function translate(list: { lang: string; value: string }[] | undefined, l
   const found = list.find((t) => t.lang === lang);
   return found ? found.value : (list[0]?.value ?? "");
 }
+
+export function sameLabel(a: string, b: string): boolean {
+  return a.localeCompare(b, undefined, { sensitivity: "base" }) === 0;
+}

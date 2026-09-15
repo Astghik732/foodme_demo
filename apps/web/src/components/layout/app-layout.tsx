@@ -4,10 +4,9 @@ import { Footer } from "@/components/layout/footer";
 
 export function AppLayout({ children }: PropsWithChildren) {
   return (
-    <div className="al_shell flex min-h-[100dvh] flex-col">
+    <div className="al_shell relative flex min-h-[100dvh] flex-col bg-white">
       <Header />
-      {/* pt-20 to offset the fixed floating header */}
-      <main className="flex-1 pt-20">{children}</main>
+      <main className="relative z-0 flex-1">{children}</main>
       <Footer />
     </div>
   );

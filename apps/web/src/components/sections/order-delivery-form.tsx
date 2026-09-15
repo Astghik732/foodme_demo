@@ -1,29 +1,82 @@
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Banknote, CreditCard, Wallet } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DeliveryTypeInput } from "@/components/sections/delivery-type-input";
 import { PhoneInput } from "@/components/sections/phone-input";
+import { cn } from "@/lib/utils";
 import { checkoutSchema, type CheckoutFormValues } from "@/schemas/checkout-schema";
 import type { DeliveryMethod } from "@/types";
 
 interface OrderDeliveryFormProps {
-  submitting: boolean;
   onSubmit: (values: CheckoutFormValues) => void;
+  onDeliveryMethodChange?: (method: DeliveryMethod) => void;
+  deliveryMethods?: DeliveryMethod[];
+  defaultContact?: {
+    receiverName?: string;
+    receiverPhoneNumber?: string;
+    receiverEmail?: string;
+  };
+  embedded?: boolean;
 }
+
+type PaymentChoice = "CASH" | "CARD" | "IDRAM";
+
+const paymentOptions = [
+  {
+    value: "CASH",
+    label: "Cash on delivery",
+    hint: "Pay at the door",
+    Icon: Banknote,
+  },
+  {
+    value: "CARD",
+    label: "Bank card",
+    hint: "Visa or Mastercard",
+    Icon: CreditCard,
+  },
+  {
+    value: "IDRAM",
+    label: "Idram",
+    hint: "Pay from wallet",
+    Icon: Wallet,
+  },
+] satisfies {
+  value: PaymentChoice;
+  label: string;
+  hint: string;
+  Icon: typeof Banknote;
+}[];
 
 function FieldGroup({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-col gap-2">{children}</div>;
+  return <div className="flex flex-col gap-1.5">{children}</div>;
 }
 
-export function OrderDeliveryForm({ submitting, onSubmit }: OrderDeliveryFormProps) {
+function Section({ children }: { children: React.ReactNode }) {
+  return <section className="space-y-3 px-5 py-5">{children}</section>;
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <h2 className="text-[13px] font-semibold tracking-wide text-zinc-500">{children}</h2>;
+}
+
+export function OrderDeliveryForm({
+  onSubmit,
+  onDeliveryMethodChange,
+  deliveryMethods,
+  defaultContact,
+  embedded = false,
+}: OrderDeliveryFormProps) {
+  const [paymentChoice, setPaymentChoice] = useState<PaymentChoice>("CASH");
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
@@ -35,123 +88,237 @@ export function OrderDeliveryForm({ submitting, onSubmit }: OrderDeliveryFormPro
       street: "",
       building: "",
       apartment: "",
+      receiverName: defaultContact?.receiverName ?? "",
+      receiverPhoneNumber: defaultContact?.receiverPhoneNumber ?? "",
+      receiverEmail: defaultContact?.receiverEmail ?? "",
     },
   });
 
+  useEffect(() => {
+    if (!defaultContact) return;
+    const current = getValues();
+    if (!current.receiverName.trim() && defaultContact.receiverName) {
+      setValue("receiverName", defaultContact.receiverName);
+    }
+    if (!current.receiverPhoneNumber.trim() && defaultContact.receiverPhoneNumber) {
+      setValue("receiverPhoneNumber", defaultContact.receiverPhoneNumber);
+    }
+    if (!current.receiverEmail.trim() && defaultContact.receiverEmail) {
+      setValue("receiverEmail", defaultContact.receiverEmail);
+    }
+  }, [defaultContact, getValues, setValue]);
+
   const deliveryMethod = watch("deliveryMethod");
+  const allowedMethods: DeliveryMethod[] =
+    deliveryMethods && deliveryMethods.length > 0 ? deliveryMethods : ["DELIVERY", "TAKEAWAY"];
+
+  useEffect(() => {
+    if (!allowedMethods.includes(deliveryMethod)) {
+      const next = allowedMethods[0];
+      setValue("deliveryMethod", next);
+      onDeliveryMethodChange?.(next);
+    }
+  }, [allowedMethods, deliveryMethod, onDeliveryMethodChange, setValue]);
 
   return (
-    <form className="odf_form space-y-6" onSubmit={handleSubmit(onSubmit)}>
-      {/* Delivery type */}
-      <div className="bezel-outer">
-        <div className="bezel-inner p-4">
+    <form
+      id="checkout-form"
+      aria-label="Checkout"
+      className={cn("odf_form", !embedded && "bezel-outer shadow-diffuse")}
+      onSubmit={handleSubmit(onSubmit)}
+    >
+      <div className={cn("divide-y divide-zinc-100", !embedded && "bezel-inner")}>
+        <Section>
+          <SectionTitle>Delivery method</SectionTitle>
           <DeliveryTypeInput
             value={deliveryMethod}
-            onChange={(v: DeliveryMethod) => setValue("deliveryMethod", v)}
+            allowed={allowedMethods}
+            onChange={(v: DeliveryMethod) => {
+              setValue("deliveryMethod", v);
+              onDeliveryMethodChange?.(v);
+            }}
           />
-        </div>
-      </div>
+        </Section>
 
-      {/* Contact info */}
-      <div className="bezel-outer">
-        <div className="bezel-inner p-5 space-y-4">
-          <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-semibold">Contact</p>
-          <div className="grid gap-4 sm:grid-cols-2">
+        <Section>
+          <SectionTitle>Contact</SectionTitle>
+          <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
             <FieldGroup>
-              <Label htmlFor="receiverName" className="text-sm font-medium text-zinc-700">Full name</Label>
-              <Input id="receiverName" placeholder="Ara Petrosyan" {...register("receiverName")} />
+              <Label htmlFor="receiverName">Full name</Label>
+              <Input
+                id="receiverName"
+                placeholder="Ara Petrosyan"
+                aria-invalid={!!errors.receiverName}
+                aria-describedby={errors.receiverName ? "receiverName-error" : undefined}
+                className={errors.receiverName ? "border-red-400 focus-visible:border-red-500" : ""}
+                {...register("receiverName")}
+              />
               {errors.receiverName && (
-                <p className="text-xs text-red-600">{errors.receiverName.message}</p>
+                <p id="receiverName-error" className="text-xs text-red-600">
+                  {errors.receiverName.message}
+                </p>
               )}
             </FieldGroup>
             <FieldGroup>
-              <Label htmlFor="receiverPhoneNumber" className="text-sm font-medium text-zinc-700">Phone</Label>
-              <PhoneInput id="receiverPhoneNumber" {...register("receiverPhoneNumber")} />
+              <Label htmlFor="receiverPhoneNumber">Phone</Label>
+              <PhoneInput
+                id="receiverPhoneNumber"
+                aria-invalid={!!errors.receiverPhoneNumber}
+                aria-describedby={errors.receiverPhoneNumber ? "receiverPhoneNumber-error" : undefined}
+                className={
+                  errors.receiverPhoneNumber ? "border-red-400 focus-visible:border-red-500" : ""
+                }
+                {...register("receiverPhoneNumber")}
+              />
               {errors.receiverPhoneNumber && (
-                <p className="text-xs text-red-600">{errors.receiverPhoneNumber.message}</p>
+                <p id="receiverPhoneNumber-error" className="text-xs text-red-600">
+                  {errors.receiverPhoneNumber.message}
+                </p>
               )}
             </FieldGroup>
-          </div>
-          <FieldGroup>
-            <Label htmlFor="receiverEmail" className="text-sm font-medium text-zinc-700">Email</Label>
-            <Input id="receiverEmail" type="email" placeholder="ara@example.com" {...register("receiverEmail")} />
-            {errors.receiverEmail && (
-              <p className="text-xs text-red-600">{errors.receiverEmail.message}</p>
-            )}
-          </FieldGroup>
-        </div>
-      </div>
-
-      {/* Address — only for DELIVERY */}
-      {deliveryMethod === "DELIVERY" && (
-        <div className="bezel-outer">
-          <div className="bezel-inner p-5 space-y-4">
-            <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-semibold">Delivery address</p>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
               <FieldGroup>
-                <Label htmlFor="city" className="text-sm font-medium text-zinc-700">City</Label>
-                <Input id="city" placeholder="Yerevan" {...register("city")} />
-                {errors.city && <p className="text-xs text-red-600">{errors.city.message}</p>}
-              </FieldGroup>
-              <FieldGroup>
-                <Label htmlFor="street" className="text-sm font-medium text-zinc-700">Street</Label>
-                <Input id="street" placeholder="Barekamutyan" {...register("street")} />
-                {errors.street && <p className="text-xs text-red-600">{errors.street.message}</p>}
-              </FieldGroup>
-              <FieldGroup>
-                <Label htmlFor="building" className="text-sm font-medium text-zinc-700">Building</Label>
-                <Input id="building" placeholder="14" {...register("building")} />
-              </FieldGroup>
-              <FieldGroup>
-                <Label htmlFor="apartment" className="text-sm font-medium text-zinc-700">Apartment</Label>
-                <Input id="apartment" placeholder="37" {...register("apartment")} />
+                <Label htmlFor="receiverEmail">Email</Label>
+                <Input
+                  id="receiverEmail"
+                  type="email"
+                  placeholder="ara@example.com"
+                  aria-invalid={!!errors.receiverEmail}
+                  aria-describedby={errors.receiverEmail ? "receiverEmail-error" : undefined}
+                  className={errors.receiverEmail ? "border-red-400 focus-visible:border-red-500" : ""}
+                  {...register("receiverEmail")}
+                />
+                {errors.receiverEmail && (
+                  <p id="receiverEmail-error" className="text-xs text-red-600">
+                    {errors.receiverEmail.message}
+                  </p>
+                )}
               </FieldGroup>
             </div>
           </div>
-        </div>
-      )}
+        </Section>
 
-      {/* Note */}
-      <div className="bezel-outer">
-        <div className="bezel-inner p-5 space-y-2">
-          <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-semibold">Note (optional)</p>
+        {deliveryMethod === "DELIVERY" && (
+          <Section>
+            <SectionTitle>Delivery address</SectionTitle>
+            <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
+              <FieldGroup>
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  placeholder="Yerevan"
+                  aria-invalid={!!errors.city}
+                  aria-describedby={errors.city ? "city-error" : undefined}
+                  className={errors.city ? "border-red-400 focus-visible:border-red-500" : ""}
+                  {...register("city")}
+                />
+                {errors.city && (
+                  <p id="city-error" className="text-xs text-red-600">
+                    {errors.city.message}
+                  </p>
+                )}
+              </FieldGroup>
+              <FieldGroup>
+                <Label htmlFor="street">Street</Label>
+                <Input
+                  id="street"
+                  placeholder="Barekamutyan"
+                  aria-invalid={!!errors.street}
+                  aria-describedby={errors.street ? "street-error" : undefined}
+                  className={errors.street ? "border-red-400 focus-visible:border-red-500" : ""}
+                  {...register("street")}
+                />
+                {errors.street && (
+                  <p id="street-error" className="text-xs text-red-600">
+                    {errors.street.message}
+                  </p>
+                )}
+              </FieldGroup>
+              <FieldGroup>
+                <Label htmlFor="building">Building</Label>
+                <Input id="building" placeholder="14" {...register("building")} />
+              </FieldGroup>
+              <FieldGroup>
+                <Label htmlFor="apartment">Apartment</Label>
+                <Input id="apartment" placeholder="37" {...register("apartment")} />
+              </FieldGroup>
+            </div>
+          </Section>
+        )}
+
+        <Section>
+          <SectionTitle>Note (optional)</SectionTitle>
           <textarea
             id="note"
-            className="w-full rounded-xl border border-zinc-200 bg-white p-3 text-sm text-zinc-900 placeholder:text-zinc-400 resize-none focus-visible:outline-none focus-visible:border-zinc-400 focus-visible:ring-4 focus-visible:ring-zinc-100 transition-all duration-200"
+            className={[
+              "w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900",
+              "placeholder:text-zinc-400",
+              "shadow-[0_1px_3px_-1px_rgba(0,0,0,0.05)]",
+              "transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]",
+              "hover:border-zinc-300",
+              "focus-visible:outline-none focus-visible:border-zinc-400 focus-visible:ring-4 focus-visible:ring-zinc-100",
+            ].join(" ")}
             rows={3}
             placeholder="Allergies, instructions, gate code..."
             {...register("note")}
           />
-        </div>
-      </div>
+        </Section>
 
-      {/* Payment */}
-      <div className="bezel-outer">
-        <div className="bezel-inner px-5 py-4">
-          <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-semibold mb-3">Payment</p>
-          <RadioGroup defaultValue="CASH" className="mt-2">
-            <div className="flex items-center gap-3">
-              <RadioGroupItem value="CASH" id="payment-cash" />
-              <Label htmlFor="payment-cash" className="font-normal text-zinc-700 cursor-pointer">
-                Cash on delivery
-              </Label>
-            </div>
+        <Section>
+          <SectionTitle>Payment</SectionTitle>
+          <RadioGroup
+            value={paymentChoice}
+            onValueChange={(value) => setPaymentChoice(value as PaymentChoice)}
+            className="grid gap-3 sm:grid-cols-3"
+            aria-label="Payment method"
+          >
+            {paymentOptions.map(({ value, label, hint, Icon }) => {
+              const selected = paymentChoice === value;
+              const id = `payment-${value.toLowerCase()}`;
+
+              return (
+                <label
+                  key={value}
+                  htmlFor={id}
+                  className={cn(
+                    "flex min-h-[5.75rem] cursor-pointer flex-col rounded-xl border p-3",
+                    "transition-[border-color,background-color] duration-200",
+                    selected
+                      ? "border-zinc-900 bg-zinc-950 text-white"
+                      : "border-zinc-200 bg-white text-zinc-900 hover:border-zinc-300",
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-lg",
+                        selected ? "bg-white/15 text-white" : "bg-zinc-100 text-zinc-700",
+                      )}
+                    >
+                      <Icon size={16} strokeWidth={1.8} />
+                    </span>
+                    <RadioGroupItem
+                      value={value}
+                      id={id}
+                      className={
+                        selected
+                          ? "border-white bg-white data-[state=checked]:border-white data-[state=checked]:bg-white data-[state=checked]:[&>span>div]:bg-zinc-950"
+                          : undefined
+                      }
+                    />
+                  </div>
+                  <div className="mt-auto pt-3">
+                    <p className="text-[13px] font-semibold leading-4">{label}</p>
+                    <p className={cn("mt-1 text-[11px] leading-4", selected ? "text-zinc-300" : "text-zinc-500")}>
+                      {hint}
+                    </p>
+                  </div>
+                </label>
+              );
+            })}
           </RadioGroup>
-        </div>
+        </Section>
       </div>
-
-      <Button
-        type="submit"
-        size="lg"
-        className="w-full rounded-full font-semibold"
-        disabled={submitting}
-      >
-        {submitting ? (
-          <span className="opacity-70">Placing order...</span>
-        ) : (
-          "Place order"
-        )}
-      </Button>
     </form>
   );
 }

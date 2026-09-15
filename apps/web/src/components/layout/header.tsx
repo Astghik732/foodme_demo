@@ -1,54 +1,126 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/layout/logo";
-import { Button } from "@/components/ui/button";
+import { MapPin, Search, ShoppingCart } from "lucide-react";
+import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/providers/auth-provider";
 
 export function Header() {
-  const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { totalCount } = useCart();
+  const { isAuthenticated, customer } = useAuth();
+  const authNext =
+    location.pathname.startsWith("/login") || location.pathname.startsWith("/register")
+      ? "/orders"
+      : `${location.pathname}${location.search}`;
+  const customerInitial = (customer?.fullName?.trim()?.[0] ?? "A").toUpperCase();
+  const activeQuery =
+    location.pathname === "/explore" ? new URLSearchParams(location.search).get("q") ?? "" : "";
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  const onSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = String(new FormData(e.currentTarget as HTMLFormElement).get("q") ?? "").trim();
+    navigate(q ? `/explore?q=${encodeURIComponent(q)}` : "/explore");
+  };
 
   return (
-    <header className="hdr_wrap fixed top-0 inset-x-0 z-50 flex justify-center pt-4 px-4">
-      <div
-        className={[
-          "flex items-center justify-between gap-8 rounded-full px-4 py-2",
-          "transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
-          scrolled
-            ? "bg-white/80 backdrop-blur-xl border border-zinc-200/60 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.12)] max-w-2xl w-full"
-            : "bg-white/60 backdrop-blur-md border border-zinc-100/80 max-w-2xl w-full",
-        ].join(" ")}
-      >
-        <Link to="/" className="flex shrink-0 items-center pl-2">
+    <header className="hdr_wrap sticky top-0 z-50 border-b border-zinc-100 bg-white">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 md:gap-4 md:px-8">
+        <Link
+          to="/"
+          aria-label="FoodMe home"
+          className="flex shrink-0 items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2"
+        >
           <Logo className="h-7 w-auto" />
         </Link>
 
-        <nav className="flex items-center gap-1 text-sm font-medium text-zinc-500">
+        {/* Uber-style delivery address pill */}
+        <div
+          className="hidden max-w-[220px] items-center gap-1.5 truncate rounded-full bg-zinc-100 px-4 py-2.5 text-left text-sm font-semibold text-zinc-900 sm:flex"
+        >
+          <MapPin size={15} className="shrink-0" strokeWidth={2.25} />
+          <span className="truncate">Yerevan · Now</span>
+        </div>
+
+        <form
+          key={`${location.pathname}:${location.search}`}
+          onSubmit={onSearch}
+          className="order-last w-full flex-1 basis-full md:order-none md:w-auto md:basis-0"
+        >
+          <label className="relative block">
+            <span className="sr-only">Search FoodMe</span>
+            <Search
+              size={18}
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"
+              strokeWidth={2.25}
+            />
+            <input
+              name="q"
+              type="search"
+              defaultValue={activeQuery}
+              placeholder="Search FoodMe"
+              className="h-11 w-full rounded-full border-0 bg-zinc-100 pl-11 pr-4 text-sm font-medium text-zinc-900 outline-none placeholder:text-zinc-500 focus:bg-white focus:ring-2 focus:ring-zinc-900"
+            />
+          </label>
+        </form>
+
+        <nav className="ml-auto flex items-center gap-2 sm:ml-0">
           <Link
             to="/explore"
             className={[
-              "px-3 py-[6px] rounded-full transition-all duration-300",
+              "hidden rounded-full px-4 py-2.5 text-sm font-semibold transition-colors sm:inline-flex",
               location.pathname === "/explore"
-                ? "bg-zinc-100 text-zinc-900 font-semibold"
-                : "hover:text-zinc-900 hover:bg-zinc-100/70",
+                ? "bg-zinc-900 text-white"
+                : "text-zinc-900 hover:bg-zinc-100",
             ].join(" ")}
           >
             Explore chefs
           </Link>
-        </nav>
 
-        <Button
-          asChild
-          size="sm"
-          className="rounded-full px-4 font-semibold text-xs tracking-wide active:scale-[0.97] transition-transform duration-150"
-        >
-          <Link to="/explore">Order now</Link>
-        </Button>
+          {isAuthenticated ? (
+            <Link
+              to="/orders"
+              className={[
+                "hidden rounded-full px-4 py-2.5 text-sm font-semibold transition-colors sm:inline-flex",
+                location.pathname === "/orders"
+                  ? "bg-zinc-900 text-white"
+                  : "text-zinc-900 hover:bg-zinc-100",
+              ].join(" ")}
+            >
+              Orders
+            </Link>
+          ) : (
+            <Link
+              to={`/login?next=${encodeURIComponent(authNext)}`}
+              className="rounded-full px-3 py-2.5 text-sm font-semibold text-zinc-900 hover:bg-zinc-100 sm:px-4"
+            >
+              Sign in
+            </Link>
+          )}
+
+          <Link
+            to="/checkout"
+            aria-label={totalCount > 0 ? `Cart, ${totalCount} items` : "Cart"}
+            className="relative flex h-11 items-center gap-2 rounded-full bg-[#06C167] px-4 text-sm font-bold text-white hover:bg-[#05a85a]"
+          >
+            <ShoppingCart size={16} strokeWidth={2.5} />
+            <span className="tabular-nums">{totalCount}</span>
+          </Link>
+
+          {isAuthenticated ? (
+            <Link
+              to="/orders"
+              aria-label={customer?.fullName ? `Account, ${customer.fullName}` : "Your orders"}
+              title={customer?.fullName ? `Signed in as ${customer.fullName}` : "Your orders"}
+              className={[
+                "flex h-11 w-11 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-white hover:bg-zinc-800",
+                location.pathname === "/orders" ? "ring-2 ring-zinc-900 ring-offset-2" : "",
+              ].join(" ")}
+            >
+              {customerInitial}
+            </Link>
+          ) : null}
+        </nav>
       </div>
     </header>
   );

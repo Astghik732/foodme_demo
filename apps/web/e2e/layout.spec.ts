@@ -1,4 +1,7 @@
 import { test, expect } from "@playwright/test";
+import { createAccountAtCheckout } from "./auth";
+
+const API = "http://localhost:8081";
 
 test.describe("Layout Tests", () => {
   test("Home page structure and sections", async ({ page }) => {
@@ -52,6 +55,10 @@ test.describe("Layout Tests", () => {
     await expect(firstCard.locator("img")).toBeVisible();
     await expect(firstCard.locator("p.truncate").first()).toBeVisible();
     await expect(firstCard.locator(".text-amber-500")).toBeVisible();
+
+    const cardName = (await firstCard.locator("p.truncate").first().textContent())?.trim();
+    const metadata = (await firstCard.locator("p.truncate").nth(1).textContent())?.trim();
+    expect(metadata).not.toBe(`${cardName} · 25–40 min`);
   });
 
   test("Responsive layout check - Mobile view", async ({ page }) => {
@@ -60,5 +67,47 @@ test.describe("Layout Tests", () => {
 
     const heroHeading = page.getByRole("heading", { name: /Real food, made by/i, level: 1 });
     await expect(heroHeading).toBeVisible();
+
+    await page.goto("/explore?q=Argentinean");
+    await expect(page.getByRole("searchbox")).toHaveCount(1);
+    await expect(page.getByRole("searchbox")).toHaveValue("Argentinean");
+  });
+
+  test("cart and checkout item details stay aligned", async ({ page }) => {
+    const chefs = await (await page.request.get(`${API}/api/chef/active?page=0&size=12`)).json();
+    let chefId: number | undefined;
+    let dishName: string | undefined;
+
+    for (const chef of chefs.exploreChefResponseDtoList) {
+      const detail = await (await page.request.get(`${API}/api/chef/${chef.id}`)).json();
+      const dish = (detail.dishes || [])
+        .slice(0, 12)
+        .find((candidate: { additions?: unknown[] }) => candidate.additions?.length);
+      if (dish) {
+        chefId = chef.id;
+        dishName = dish.nameEn;
+        break;
+      }
+    }
+
+    expect(chefId).toBeTruthy();
+    expect(dishName).toBeTruthy();
+
+    await page.goto(`/chef/${chefId}`);
+    await page.locator("button.dc_card").filter({ hasText: dishName! }).first().click();
+    await page.locator('input[type="checkbox"]').first().check();
+    await page.getByRole("button", { name: "Add to cart" }).click();
+
+    const cartItem = page.locator("aside.uc-panel .cic_root").first();
+    const cartNameBox = await cartItem.getByText(dishName!, { exact: true }).boundingBox();
+    const removeBox = await cartItem.getByRole("button", { name: "Remove item" }).boundingBox();
+    expect(Math.abs(cartNameBox!.y - removeBox!.y)).toBeLessThanOrEqual(6);
+
+    await page.getByRole("link", { name: "Go to checkout" }).click();
+    await createAccountAtCheckout(page);
+    const summary = page.locator(".cs_wrap");
+    const quantityBox = await summary.locator(".tabular-nums.text-zinc-400").first().boundingBox();
+    const additionsBox = await summary.getByText(/^\+ /).first().boundingBox();
+    expect(additionsBox!.x).toBeGreaterThan(quantityBox!.x + 16);
   });
 });

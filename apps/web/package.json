@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:all": "npm run test:e2e && npm --prefix ../admin run test:e2e"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

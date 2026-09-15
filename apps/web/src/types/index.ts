@@ -141,6 +141,35 @@ export interface OrderDishDto {
   additions?: OrderDishAdditionDto[];
 }
 
+export interface CustomerProfile {
+  id: number;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+}
+
+export interface CustomerAuthDto {
+  token: string;
+  customer: CustomerProfile;
+}
+
+export interface CustomerRegisterRequest {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+}
+
+export interface CustomerLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface OrderListResponseDto {
+  list: FullOrderDto[];
+  count: number;
+}
+
 export interface FullOrderDto {
   number: string;
   status: string;

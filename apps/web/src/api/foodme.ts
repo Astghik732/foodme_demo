@@ -2,6 +2,10 @@ import { apiClient } from "@/api/client";
 import type {
   ChefsPageDto,
   ChefTagOrderWithDishTagDto,
+  CustomerAuthDto,
+  CustomerLoginRequest,
+  CustomerProfile,
+  CustomerRegisterRequest,
   DeliveryPriceRequest,
   DeliveryPriceResponse,
   DishPaginationCountDto,
@@ -9,6 +13,7 @@ import type {
   FullOrderDto,
   OrderCreateResponseDto,
   OrderDto,
+  OrderListResponseDto,
 } from "@/types";
 
 export const foodmeApi = {
@@ -30,4 +35,15 @@ export const foodmeApi = {
     apiClient.post<OrderCreateResponseDto>("/api/order", payload),
 
   getOrderByNumber: (number: string) => apiClient.get<FullOrderDto>(`/api/order/number/${number}`),
+
+  register: (payload: CustomerRegisterRequest) =>
+    apiClient.post<CustomerAuthDto>("/api/auth/register", payload),
+
+  login: (payload: CustomerLoginRequest) =>
+    apiClient.post<CustomerAuthDto>("/api/auth/login", payload),
+
+  getMe: () => apiClient.get<CustomerProfile>("/api/customer/me"),
+
+  getMyOrders: (page = 0, size = 20) =>
+    apiClient.get<OrderListResponseDto>(`/api/customer/orders?page=${page}&size=${size}`),
 };

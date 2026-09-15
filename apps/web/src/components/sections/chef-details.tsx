@@ -1,5 +1,6 @@
-import { Star } from "lucide-react";
-import { translate } from "@/lib/utils";
+import { Star, Clock, Phone, Truck, ShoppingBag } from "lucide-react";
+import { formatAmd, sameLabel, translate } from "@/lib/utils";
+import { SafeImage } from "@/components/ui/safe-image";
 import type { ExploreChefResponseDto } from "@/types";
 
 interface ChefDetailsProps {
@@ -7,49 +8,94 @@ interface ChefDetailsProps {
 }
 
 export function ChefDetails({ chef }: ChefDetailsProps) {
+  const name = translate(chef.name);
+  const kitchen = translate(chef.kitchen);
+  const showKitchen = kitchen && !sameLabel(kitchen, name);
+  const heroSrc = chef.bannerUrl || chef.avatarUrl;
+  const isNew = chef.rating == null || chef.rating === 0;
+  const supportsDelivery = chef.deliveryMethods?.includes("DELIVERY");
+  const supportsTakeaway = chef.deliveryMethods?.includes("TAKEAWAY");
+
   return (
-    <section className="cd_hero">
-      {/* Banner */}
-      <div className="relative h-56 w-full overflow-hidden bg-zinc-100 md:h-72">
-        <img src={chef.bannerUrl} alt="" className="h-full w-full object-cover" />
-        {/* Bottom gradient overlay */}
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background/60 to-transparent pointer-events-none" />
+    <section className="cd_hero bg-white">
+      <div className="relative h-44 w-full overflow-hidden bg-zinc-200 md:h-56">
+        {chef.bannerUrl ? (
+          <SafeImage src={heroSrc} alt="" className="h-full w-full object-cover" />
+        ) : heroSrc ? (
+          <>
+            <SafeImage
+              src={heroSrc}
+              alt=""
+              className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-xl"
+            />
+            <div className="absolute inset-0 bg-white/25" aria-hidden="true" />
+            <SafeImage
+              src={heroSrc}
+              alt=""
+              className="relative mx-auto h-full w-full max-w-2xl object-contain px-10 py-5"
+            />
+          </>
+        ) : null}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
       </div>
 
-      {/* Chef info overlapping the banner */}
-      <div className="mx-auto max-w-7xl px-4 md:px-8">
-        <div className="flex flex-wrap items-end gap-4 -mt-14">
-          {/* Avatar — rounded-2xl, elevated */}
-          <div className="shrink-0">
-            <img
-              src={chef.avatarUrl}
-              alt={translate(chef.name)}
-              className="h-24 w-24 rounded-2xl border-4 border-white object-cover shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)]"
-            />
-          </div>
-
-          {/* Name + meta */}
-          <div className="pb-1 flex flex-col gap-2">
-            <h1 className="font-display text-2xl md:text-3xl font-bold text-zinc-900 leading-tight">
-              {translate(chef.name)}
-            </h1>
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Kitchen tag */}
-              <span className="inline-flex rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
-                {translate(chef.kitchen)}
+      <div className="relative mx-auto max-w-7xl px-4 md:px-8">
+        <div className="flex flex-wrap items-end gap-4 pb-5">
+          <SafeImage
+            src={chef.avatarUrl}
+            alt={name}
+            className="-mt-10 h-20 w-20 rounded-2xl border-4 border-white object-cover shadow-[0_6px_18px_rgba(0,0,0,0.14)] md:-mt-12 md:h-24 md:w-24"
+          />
+          <div className="min-w-0 flex-1 pb-1 pt-4">
+            <h1 className="font-display text-2xl font-extrabold text-zinc-900 md:text-3xl">{name}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+              {showKitchen && <span className="text-zinc-500">{kitchen}</span>}
+              {showKitchen && <span className="text-zinc-300">·</span>}
+              {isNew ? (
+                <span className="font-bold text-amber-500">New</span>
+              ) : (
+                <span className="inline-flex items-center gap-1 font-semibold">
+                  <Star size={14} className="text-amber-500" fill="currentColor" />
+                  {chef.rating.toFixed(1)}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1 text-zinc-500">
+                <Clock size={13} />
+                25–40 min
               </span>
-              {/* Rating pill */}
-              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-700">
-                <Star size={12} fill="currentColor" strokeWidth={0} />
-                {chef.rating.toFixed(1)}
-              </span>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-600">
+              {supportsDelivery && (
+                <span className="inline-flex items-center gap-1">
+                  <Truck size={14} strokeWidth={2} />
+                  {chef.deliveryPrice === 0
+                    ? "Free delivery"
+                    : `${formatAmd(chef.deliveryPrice)} delivery`}
+                  {chef.freeDeliveryFrom > 0 && chef.deliveryPrice > 0
+                    ? ` · free from ${formatAmd(chef.freeDeliveryFrom)}`
+                    : ""}
+                </span>
+              )}
+              {supportsTakeaway && (
+                <span className="inline-flex items-center gap-1">
+                  <ShoppingBag size={14} strokeWidth={2} />
+                  Takeaway
+                </span>
+              )}
+              {chef.phoneNumber && (
+                <a
+                  href={`tel:${chef.phoneNumber}`}
+                  className="inline-flex items-center gap-1 hover:text-zinc-900"
+                >
+                  <Phone size={14} strokeWidth={2} />
+                  {chef.phoneNumber}
+                </a>
+              )}
             </div>
           </div>
         </div>
-
-        {/* Description */}
         {chef.description && (
-          <p className="mt-5 max-w-2xl text-sm text-zinc-500 leading-relaxed">
+          <p className="max-w-2xl pb-5 text-sm leading-relaxed text-zinc-500">
             {translate(chef.description)}
           </p>
         )}

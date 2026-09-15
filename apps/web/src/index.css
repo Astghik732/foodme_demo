@@ -3,61 +3,34 @@
 
 @layer base {
   :root {
-    /* Soft Structuralism — warm off-white base, deep zinc text, amber brand accent */
-    --background: 40 20% 98%;
-    --foreground: 220 15% 12%;
+    /* Uber Eats–inspired — white canvas, black chrome, Uber green accent */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 4%;
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 12%;
+    --card-foreground: 0 0% 4%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 12%;
-    --primary: 220 15% 12%;
-    --primary-foreground: 40 20% 98%;
-    --secondary: 220 10% 95%;
-    --secondary-foreground: 220 15% 12%;
-    --muted: 220 10% 94%;
-    --muted-foreground: 220 8% 48%;
-    --accent: 220 10% 94%;
-    --accent-foreground: 220 15% 12%;
-    --success: 142 72% 29%;
-    --warning: 24.6 95% 53.1%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 220 10% 90%;
-    --input: 220 10% 90%;
-    --ring: 220 15% 12%;
+    --popover-foreground: 0 0% 4%;
+    --primary: 0 0% 4%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 4%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 145 100% 39%;
+    --accent-foreground: 0 0% 100%;
+    --success: 145 100% 33%;
+    --warning: 36 100% 50%;
+    --destructive: 0 84% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 4%;
     --radius: 0.75rem;
 
-    /* Warm amber brand accent */
-    --brand: 32 95% 52%;
+    /* Uber green */
+    --brand: 145 100% 39%;
     --brand-foreground: 0 0% 100%;
-    --brand-muted: 32 95% 95%;
-  }
-
-  .dark {
-    --background: 220 15% 8%;
-    --foreground: 40 20% 96%;
-    --card: 220 15% 10%;
-    --card-foreground: 40 20% 96%;
-    --popover: 220 15% 10%;
-    --popover-foreground: 40 20% 96%;
-    --primary: 40 20% 96%;
-    --primary-foreground: 220 15% 8%;
-    --secondary: 220 12% 16%;
-    --secondary-foreground: 40 20% 96%;
-    --muted: 220 12% 16%;
-    --muted-foreground: 220 8% 55%;
-    --accent: 220 12% 16%;
-    --accent-foreground: 40 20% 96%;
-    --success: 142 72% 29%;
-    --warning: 24.6 95% 53.1%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 220 12% 20%;
-    --input: 220 12% 20%;
-    --ring: 220 8% 65%;
-    --brand: 32 95% 52%;
-    --brand-foreground: 0 0% 100%;
-    --brand-muted: 32 30% 18%;
+    --brand-muted: 145 60% 94%;
   }
 }
 
@@ -78,16 +51,17 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family: "Plus Jakarta Sans", "Noto Sans Armenian", "Noto Sans", sans-serif;
+    letter-spacing: 0;
+    word-spacing: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Scroll entry animation helper */
   .reveal {
     opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.7s cubic-bezier(0.32, 0.72, 0, 1),
-      transform 0.7s cubic-bezier(0.32, 0.72, 0, 1);
+    transform: translateY(12px);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
   }
   .reveal.visible {
     opacity: 1;
@@ -107,40 +81,84 @@
     width: 6px;
   }
   .fm-scrollbar::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--muted-foreground) / 0.4);
+    background-color: hsl(var(--muted-foreground) / 0.35);
     border-radius: 999px;
   }
-  @keyframes scroll {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(-50%);
-    }
-  }
-  .animate-scroll {
-    animation: scroll 40s linear infinite;
-  }
 
-  /* Double-bezel card shell */
+  /* Uber-style card shell — flat, hairline on hover shadow */
   .bezel-outer {
-    padding: 6px;
-    border-radius: 1.5rem;
-    background: hsl(var(--muted) / 0.6);
-    border: 1px solid hsl(var(--border) / 0.8);
+    padding: 0;
+    border-radius: 1rem;
+    background: transparent;
+    border: none;
   }
   .bezel-inner {
-    border-radius: calc(1.5rem - 6px);
+    border-radius: 1rem;
     background: hsl(var(--card));
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9);
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     overflow: hidden;
   }
 
-  /* Diffusion shadow */
   .shadow-diffuse {
-    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.07);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   }
   .shadow-diffuse-lg {
-    box-shadow: 0 32px 64px -20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  }
+
+  .grain-overlay {
+    display: none;
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(
+      105deg,
+      #eee 0%,
+      #eee 40%,
+      #f7f7f7 50%,
+      #eee 60%,
+      #eee 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+
+  /* Uber-style filter chip */
+  .eda-chip {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    border-radius: 9999px;
+    background: #f3f3f3;
+    padding: 8px 14px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #111;
+    transition: background-color 0.15s;
+  }
+  .eda-chip:hover {
+    background: #e8e8e8;
+  }
+  .eda-chip:focus-visible {
+    outline: 2px solid #111;
+    outline-offset: 2px;
+  }
+  .eda-chip-active {
+    background: #111;
+    color: #fff;
+  }
+  .eda-chip-active:hover {
+    background: #222;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation: none !important;
+      transition: none !important;
+    }
   }
 }
