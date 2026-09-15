@@ -128,7 +128,7 @@ const OrderDetails = () => {
                 <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
                     Note
                 </Typography>
-                {/* FM-BUG-08 FM-VULN-10 */}
+                {/* FM-BUG-08 */}
                 <Typography
                     component="div"
                     sx={{ whiteSpace: 'pre-line' }}

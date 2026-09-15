@@ -4,7 +4,14 @@ import api from '../api/base-api.js';
 // resource objects to react-admin's `{ data, total }` / `{ data }` contract.
 // The API already includes `id` on every record, so no mapping is needed there.
 
-const resourcePath = (resource) => `/${resource}`;
+// react-admin resource names are plural; backend admin paths are singular.
+const RESOURCE_TO_PATH = {
+    orders: 'order',
+    chefs: 'chef',
+    dishes: 'dish',
+};
+
+const resourcePath = (resource) => `/${RESOURCE_TO_PATH[resource] ?? resource}`;
 
 const dataProvider = {
     getList: async (resource, params) => {
