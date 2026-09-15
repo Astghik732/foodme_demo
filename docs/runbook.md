@@ -14,7 +14,7 @@ more than one `--profile` flag to bring up several at once.
 
 | Profile | Services | When you need it |
 |---|---|---|
-| `core` | postgres, minio (+ minio-init), backend, web, admin | Every session |
+| `core` | postgres, backend, web, admin | Every session |
 | `observability` | prometheus, loki, promtail, grafana, glitchtip (+ its postgres/redis) | Sessions 6–8 |
 | `ci` | jenkins | Sessions 5, 7 |
 
@@ -67,6 +67,21 @@ python3 scripts/extract_seed_from_backup.py --backup ~/Downloads/db_backup_2026-
 Each QA deploys their own free instance (Neon + Render + Vercel). Guide is
 written for non-developers: [`docs/deployment.md`](deployment.md).
 
+### E2E tests (both frontends)
+
+Backend must be reachable on `http://localhost:8081` (compose `core` profile).
+
+```bash
+# Storefront (starts Vite on 5180)
+cd apps/web && npm run test:e2e
+
+# Admin back office (starts Vite on 5174)
+cd apps/admin && npm run test:e2e
+
+# Or both from web:
+cd apps/web && npm run test:e2e:all
+```
+
 Check what's healthy:
 
 ```bash
@@ -83,8 +98,6 @@ curl -s localhost:8081/actuator/health
 | Backend API | http://localhost:8081 | none (`/api/**` open); `/admin/**` needs a JWT from `/admin/auth/login` |
 | Swagger UI | http://localhost:8081/swagger-ui.html | none |
 | Postgres | localhost:5432 | from `.env`: `POSTGRES_USER` / `POSTGRES_PASSWORD`, db `foodme` |
-| MinIO API | http://localhost:9000 | from `.env`: `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (default `foodme`/`foodme123`) |
-| MinIO console | http://localhost:9001 | same as above |
 | Grafana | http://localhost:3002 | from `.env`: `GF_SECURITY_ADMIN_USER` / `GF_SECURITY_ADMIN_PASSWORD` (default `admin`/`admin`) |
 | Prometheus | http://localhost:9090 | none |
 | Loki | http://localhost:3100 (API, no UI — query via Grafana or `logcli`) | none |
@@ -92,49 +105,44 @@ curl -s localhost:8081/actuator/health
 | Jenkins | http://localhost:8080 | from `.env`: `JENKINS_ADMIN_ID` / `JENKINS_ADMIN_PASSWORD` (default `admin`/`admin`) |
 
 Container names (for `docker logs`, `docker exec`, Loki label matchers):
-`foodme-postgres`, `foodme-minio`, `foodme-minio-init`, `foodme-backend`,
+`foodme-postgres`, `foodme-backend`,
 `foodme-web`, `foodme-admin`,
 `foodme-prometheus`, `foodme-loki`, `foodme-promtail`, `foodme-grafana`,
 `foodme-glitchtip-postgres`, `foodme-glitchtip-redis`,
 `foodme-glitchtip-web`, `foodme-glitchtip-worker`, `foodme-jenkins`.
 
-## 2b. Pictures in MinIO
+## 2b. Pictures in Postgres
 
-Chef and dish pictures live in the `foodme-images` bucket. The one-shot
-`minio-init` container runs on every `up` of the `core` profile: it creates
-the bucket, sets an anonymous *download* policy on it (browsers load the
-images directly, no signed URLs) and mirrors `apps/web/public/img/` into it.
-Object keys mirror the repo layout, so `/img/chef/12-avatar.jpg` becomes:
+Chef and dish pictures live in the `foodme.image` table (`bytea` column) and
+are served by the backend at `/api/images/**` — there is no separate
+object-storage service. On first start, the backend copies the bundled seed
+images from `classpath:/img-seed/` (checked into the repo at
+`apps/backend/src/main/resources/img-seed/`) into the table; the loader is
+idempotent and skips when the table is not empty
+(`FOODME_IMAGES_SEED_ENABLED=false` disables it).
+
+Stored URLs are API-relative (`/api/images/chefs/24/avatar.png`); the backend
+absolutizes them against the incoming request's host, so the same database
+works on localhost, Render, or any other deployment without reconfiguration:
 
 ```
-http://localhost:9000/foodme-images/chef/12-avatar.jpg
+http://localhost:8081/api/images/chefs/24/avatar.png
 ```
 
-Check or manage the contents from the console at http://localhost:9001, or
-from the CLI:
+Refresh seed files from the production CDN (optional, needs network + backup):
 
 ```bash
-docker run --rm --network foodme minio/mc:latest sh -c \
-  'mc alias set local http://minio:9000 foodme foodme123 && mc ls -r local/foodme-images'
+python3 scripts/download_bychef_images.py
 ```
 
-Re-seed after changing the files in `apps/web/public/img`:
+After changing files under `apps/backend/src/main/resources/img-seed/`, wipe
+the table so the loader re-seeds on next start:
 
 ```bash
-docker compose -f infra/docker-compose.yml --profile core up minio-init
+docker compose -f infra/docker-compose.yml exec postgres \
+  psql -U foodme -d foodme -c 'TRUNCATE foodme.image'
+docker compose -f infra/docker-compose.yml restart backend
 ```
-
-Wipe the bucket entirely (drops the `minio-data` volume):
-
-```bash
-docker compose -f infra/docker-compose.yml --profile core rm -sf minio
-docker volume rm foodme_minio-data
-```
-
-Note: the apps still reference pictures by the relative `/img/...` paths
-served by the storefront's nginx — the bucket is the storage backend that a
-future upload/serving path in the backend (`MINIO_*` env vars are already
-wired into the `backend` service) will read from.
 
 ## 3. First-run: GlitchTip DSN
 
@@ -212,9 +220,14 @@ for i in $(seq 1 30); do
 done
 
 # A handful of real orders, so order-creation metrics/logs have data
+TOKEN=$(curl -s -X POST localhost:8081/api/auth/register \
+  -H 'Content-Type: application/json' \
+  -d "{\"fullName\":\"Load Test\",\"email\":\"load-$RANDOM@example.com\",\"phoneNumber\":\"+37491000000\",\"password\":\"secret123\"}" \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')
 for i in $(seq 1 5); do
   curl -s -X POST localhost:8081/api/order \
     -H 'Content-Type: application/json' \
+    -H "Authorization: Bearer $TOKEN" \
     -d '{"chefId":1,"receiverName":"Load Test","receiverPhoneNumber":"+37491000000","paymentType":"CASH","deliveryMethod":"TAKEAWAY","createOrderDishes":[{"dishId":10,"quantity":1}]}' \
     -o /dev/null
 done

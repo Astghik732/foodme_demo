@@ -7,7 +7,10 @@ not rename fields, even where they look odd (`nameHy`, `exploreChefResponseDtoLi
 Translation arrays use the shape `[{ "lang": "en" | "hy" | "ru", "value": "..." }]`.
 Languages present: `en`, `hy`, `ru`. UI renders `en`.
 
-## Public API — `/api/**` (no auth)
+## Public API — `/api/**`
+
+Browse, cart pricing, and order lookup by number stay open. Placing an order
+and reading account history require a customer JWT (`Authorization: Bearer`).
 
 ### `GET /api/chef/active?page=0&size=12`
 ```json
@@ -79,7 +82,29 @@ Request: `{ "chefId": 1, "subtotal": 5400.0, "deliveryMethod": "DELIVERY" }`
 Response: `{ "deliveryPrice": 700.0, "freeDeliveryFrom": 8000.0 }`
 `TAKEAWAY` always returns `0.0`.
 
-### `POST /api/order`
+### `POST /api/auth/register`
+Request: `{ "fullName": "Ann", "email": "ann@example.com", "phoneNumber": "+37491234567", "password": "secret123" }`
+Response (`CustomerAuthDto`): `{ "token": "...", "customer": { "id": 1, "fullName": "Ann", "email": "ann@example.com", "phoneNumber": "+37491234567" } }`
+
+Rules:
+- email is unique (case-insensitive) → **400** `{"message":"Email already registered"}`
+- password must be at least 8 characters
+
+### `POST /api/auth/login`
+Request: `{ "email": "ann@example.com", "password": "secret123" }`
+Response: `CustomerAuthDto`
+Unknown email or wrong password → **400** `{"message":"Invalid email or password"}`
+
+### `GET /api/customer/me` (customer JWT)
+→ `{ "id": 1, "fullName": "Ann", "email": "ann@example.com", "phoneNumber": "+37491234567" }`
+
+### `GET /api/customer/orders?page=0&size=20` (customer JWT)
+```json
+{ "list": [ OrderDto ], "count": 2 }
+```
+Only the signed-in customer's orders, newest first.
+
+### `POST /api/order` (customer JWT)
 Request (`OrderDto`):
 ```json
 {
@@ -97,9 +122,11 @@ Request (`OrderDto`):
 Response (`OrderCreateResponseDto`): `{ "number": "FM-100001", "status": "NEW", "totalPrice": 5100.0 }`
 
 Rules:
+- missing or non-customer JWT → **401**
 - `paymentType` other than `"CASH"` → **400** `{"message":"Only CASH payment is supported"}`
 - `deliveryMethod: "TAKEAWAY"` → `addressDto` may be null, delivery price 0
 - prices are recomputed server-side from the DB, never trusted from the client
+- the new order is attached to the signed-in customer and appears in `/api/customer/orders`
 
 ### `GET /api/order/number/{number}` → `OrderDto`
 Full order incl. `orderDishList`, `status`, `createdAt`, `chefName`.

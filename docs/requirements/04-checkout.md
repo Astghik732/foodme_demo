@@ -6,8 +6,10 @@ Checkout collects delivery details and payment method, submits the order, and
 takes the customer to a confirmation screen with a trackable order number.
 FoodMe supports cash on delivery only — there is no online payment.
 
-Backed by `POST /api/order`, `POST /api/order/delivery-price`, and
-`GET /api/order/number/{number}`.
+Backed by `POST /api/auth/register`, `POST /api/auth/login`,
+`POST /api/order`, `POST /api/order/delivery-price`, and
+`GET /api/order/number/{number}`. Signed-in customers also use
+`GET /api/customer/orders` for history.
 
 ## User stories
 
@@ -19,6 +21,9 @@ up the order myself if that's more convenient.
 
 **US-3.** As a customer, I want a record of my order I can check on later, so
 I can follow its status without contacting the chef directly.
+
+**US-4.** As a customer, I want to sign in or create an account when I order,
+so I can track the current order and see my previous ones.
 
 ## Acceptance criteria
 
@@ -63,9 +68,10 @@ shown to the chef alongside the order.
 
 ### AC-5 — Placing the order
 
-5.1. Submitting checkout calls `POST /api/order` with the cart's dishes as
-`createOrderDishes` (`dishId`, `quantity`), the chosen delivery method,
-address (if applicable), and contact details.
+5.1. Submitting checkout calls `POST /api/order` with a customer JWT and the
+cart's dishes as `createOrderDishes` (`dishId`, `quantity`), the chosen
+delivery method, address (if applicable), and contact details. The "Place
+order" button stays disabled until the customer is signed in.
 
 5.2. While the request is in flight, the "Place order" button is disabled to
 prevent duplicate submissions.
@@ -89,3 +95,16 @@ items, and total, so they have a record even if they close the browser tab.
 
 6.3. The tracking page is reachable at any time by re-entering the order
 number, without needing an account.
+
+### AC-7 — Account at checkout
+
+7.1. Checkout shows only a sign-in / create-account panel if the customer is
+not already authenticated — delivery, payment, and the order summary stay
+hidden. After success, the rest of checkout appears and empty contact
+fields are filled from the account profile.
+
+7.2. A signed-in customer can open `/orders` to see their order history
+(number, chef, status, total) and jump to `/tracking/<number>`.
+
+7.3. Dedicated `/login` and `/register` pages sign the customer in and
+return them to the `next` path (checkout, orders, or the page they left).

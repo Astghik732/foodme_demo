@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Extract 6 ACTIVE chefs (+ dishes/tags/additions) from a bychef pg_dump
-into foodme seed SQL. Anonymizes chef personal names, emails, and phones.
-Keeps kitchen names, descriptions, dish names, and prices real.
+into foodme seed SQL.
+
+Chef display names are course-friendly kitchen brands (not real PII).
+Images are served by the backend from Postgres (apps/backend/src/main/resources/img-seed
+← bychef CDN downloads, loaded into foodme.image on first start).
 """
 
 from __future__ import annotations
@@ -15,60 +18,126 @@ from pathlib import Path
 # Top ACTIVE chefs by dish count (excluding the "For testing" account).
 CHOSEN_CHEF_IDS = [24, 32, 17, 39, 28, 21]
 
-# Realistic fake identities — only names / contact fields are replaced.
+# API-relative base the browser uses to load images from the backend.
+IMAGE_API_BASE = "/api/images"
+BYCHEF_CDN = "https://static.bychef.am/"
+
+# Course kitchen brands — personal PII stripped; contacts stay fake.
 FAKE_IDENTITY = {
     24: {
-        "full_name_en": "Anna Petrosyan",
-        "full_name_am": "Աննա Պետրոսյան",
-        "full_name_ru": "Анна Петросян",
+        "username": "alans_kitchen",
+        "full_name_en": "Alans Kitchen",
+        "full_name_am": "Alans Kitchen",
+        "full_name_ru": "Alans Kitchen",
+        "kitchen_en": "Alans Kitchen",
+        "kitchen_am": "Alans Kitchen",
+        "kitchen_ru": "Alans Kitchen",
+        "description_en": "Comfort food from Alans Kitchen.",
+        "description_am": "Comfort food from Alans Kitchen.",
+        "description_ru": "Comfort food from Alans Kitchen.",
         "email": "chef1@example.com",
         "phone_number": "+37499110001",
-        "username": "kare_house",
+        "avatar_url": f"{IMAGE_API_BASE}/chefs/24/avatar.jpeg",
+        "banner_url": None,
     },
     32: {
-        "full_name_en": "David Hakobyan",
-        "full_name_am": "Դավիթ Հակոբյան",
-        "full_name_ru": "Давид Акопян",
+        "username": "italiano_margarino",
+        "full_name_en": "Italiano Margarino",
+        "full_name_am": "Italiano Margarino",
+        "full_name_ru": "Italiano Margarino",
+        "kitchen_en": "Italiano Margarino",
+        "kitchen_am": "Italiano Margarino",
+        "kitchen_ru": "Italiano Margarino",
+        "description_en": "Italian-inspired dishes from Italiano Margarino.",
+        "description_am": "Italian-inspired dishes from Italiano Margarino.",
+        "description_ru": "Italian-inspired dishes from Italiano Margarino.",
         "email": "chef2@example.com",
         "phone_number": "+37499110002",
-        "username": "arevik_cakes",
+        "avatar_url": f"{IMAGE_API_BASE}/chefs/32/avatar.jpg",
+        "banner_url": None,
     },
     17: {
-        "full_name_en": "Mariana Grigoryan",
-        "full_name_am": "Մարիանա Գրիգորյան",
-        "full_name_ru": "Мариана Григорян",
+        "username": "chef_verona",
+        "full_name_en": "Chef Verona",
+        "full_name_am": "Chef Verona",
+        "full_name_ru": "Chef Verona",
+        "kitchen_en": "Chef Verona",
+        "kitchen_am": "Chef Verona",
+        "kitchen_ru": "Chef Verona",
+        "description_en": "Sweet treats from Chef Verona.",
+        "description_am": "Sweet treats from Chef Verona.",
+        "description_ru": "Sweet treats from Chef Verona.",
         "email": "chef3@example.com",
         "phone_number": "+37499110003",
-        "username": "sweetberg",
+        "avatar_url": f"{IMAGE_API_BASE}/chefs/17/avatar.jpg",
+        "banner_url": None,
     },
     39: {
-        "full_name_en": "Arman Sargsyan",
-        "full_name_am": "Արման Սարգսյան",
-        "full_name_ru": "Арман Саргсян",
+        "username": "argentinean",
+        "full_name_en": "Argentinean",
+        "full_name_am": "Argentinean",
+        "full_name_ru": "Argentinean",
+        "kitchen_en": "Argentinean",
+        "kitchen_am": "Argentinean",
+        "kitchen_ru": "Argentinean",
+        "description_en": "Grill and classics from Argentinean kitchen.",
+        "description_am": "Grill and classics from Argentinean kitchen.",
+        "description_ru": "Grill and classics from Argentinean kitchen.",
         "email": "chef4@example.com",
         "phone_number": "+37499110004",
-        "username": "chatora_neko",
+        "avatar_url": f"{IMAGE_API_BASE}/chefs/39/avatar.jpg",
+        "banner_url": None,
     },
     28: {
-        "full_name_en": "Lilit Mkrtchyan",
-        "full_name_am": "Լիլիթ Մկրտչյան",
-        "full_name_ru": "Лилит Мкртчян",
+        "username": "armenian_traditional",
+        "full_name_en": "Armenian Traditional",
+        "full_name_am": "Armenian Traditional",
+        "full_name_ru": "Armenian Traditional",
+        "kitchen_en": "Armenian Traditional",
+        "kitchen_am": "Armenian Traditional",
+        "kitchen_ru": "Armenian Traditional",
+        "description_en": "Homestyle Armenian dishes.",
+        "description_am": "Homestyle Armenian dishes.",
+        "description_ru": "Homestyle Armenian dishes.",
         "email": "chef5@example.com",
         "phone_number": "+37499110005",
-        "username": "bourbon_yerevan",
+        "avatar_url": f"{IMAGE_API_BASE}/chefs/28/avatar.jpg",
+        "banner_url": None,
     },
     21: {
-        "full_name_en": "Narek Avagyan",
-        "full_name_am": "Նարեկ Ավագյան",
-        "full_name_ru": "Нарек Авагян",
+        "username": "sakura_kitchen",
+        "full_name_en": "Sakura Kitchen",
+        "full_name_am": "Sakura Kitchen",
+        "full_name_ru": "Sakura Kitchen",
+        "kitchen_en": "Sakura Kitchen",
+        "kitchen_am": "Sakura Kitchen",
+        "kitchen_ru": "Sakura Kitchen",
+        "description_en": "Fresh rolls and bowls from Sakura Kitchen.",
+        "description_am": "Fresh rolls and bowls from Sakura Kitchen.",
+        "description_ru": "Fresh rolls and bowls from Sakura Kitchen.",
         "email": "chef6@example.com",
         "phone_number": "+37499110006",
-        "username": "omakase_sushi",
+        "avatar_url": f"{IMAGE_API_BASE}/chefs/21/avatar.jpg",
+        "banner_url": None,
     },
 }
 
 DEFAULT_DELIVERY_PRICE = 500.0
 DEFAULT_FREE_DELIVERY_FROM = 5000.0
+
+
+def to_image_url(url: str | None) -> str | None:
+    """Map a bychef CDN URL onto the API-relative image path."""
+    if not url:
+        return None
+    if url.startswith(BYCHEF_CDN):
+        return f"{IMAGE_API_BASE}/{url[len(BYCHEF_CDN):]}"
+    if url.startswith(IMAGE_API_BASE):
+        return url
+    m = re.search(r"/chefs/(.+)$", url)
+    if m:
+        return f"{IMAGE_API_BASE}/chefs/{m.group(1)}"
+    return url
 
 
 def parse_values(raw_line: str):
@@ -271,7 +340,7 @@ def emit_seed(data) -> str:
 
     lines = []
     lines.append("-- Seed generated from db_backup_2026-02-10.sql")
-    lines.append("-- 6 ACTIVE chefs; chef names/emails/phones anonymized; dish data kept.")
+    lines.append("-- 6 ACTIVE chefs; generic chef/kitchen names; dish catalog kept.")
     lines.append("")
 
     # Admin (bcrypt hash for 'admin' — same as prior V2 seed)
@@ -297,7 +366,7 @@ def emit_seed(data) -> str:
     lines.append("")
 
     # Chefs
-    lines.append("-- Chefs (anonymized names/emails/phones)")
+    lines.append("-- Chefs (generic names, kitchens, descriptions, contacts, local logos)")
     for cid in CHOSEN_CHEF_IDS:
         c = chefs[cid]
         fake = FAKE_IDENTITY[cid]
@@ -310,20 +379,21 @@ def emit_seed(data) -> str:
             "rating, platform_fee, delivery_price, free_delivery_from, priority_index"
             ") VALUES ("
             f"{cid}, {sql_str(fake['username'])}, {sql_str(fake['phone_number'])}, "
-            f"{sql_str(fake['email'])}, {sql_str(c['avatar_url'])}, {sql_str(c['banner_url'])}, "
+            f"{sql_str(fake['email'])}, {sql_str(fake['avatar_url'])}, {sql_str(fake['banner_url'])}, "
             f"'ACTIVE', {sql_str(fake['full_name_en'])}, {sql_str(fake['full_name_am'])}, "
             f"{sql_str(fake['full_name_ru'])}, "
-            f"{sql_str_max(c['description_en'], 2000)}, {sql_str_max(c['description_am'], 2000)}, "
-            f"{sql_str_max(c['description_ru'], 2000)}, "
-            f"{sql_str(c['kitchen_en'])}, {sql_str(c['kitchen_am'])}, {sql_str(c['kitchen_ru'])}, "
+            f"{sql_str(fake['description_en'])}, {sql_str(fake['description_am'])}, "
+            f"{sql_str(fake['description_ru'])}, "
+            f"{sql_str(fake['kitchen_en'])}, {sql_str(fake['kitchen_am'])}, "
+            f"{sql_str(fake['kitchen_ru'])}, "
             f"{c['rating']}, {c['platform_fee']}, {DEFAULT_DELIVERY_PRICE}, "
             f"{DEFAULT_FREE_DELIVERY_FROM}, {c['priority_index']}"
             ");"
         )
     lines.append("")
 
-    # Dishes
-    lines.append("-- Dishes")
+    # Dishes — image URLs rewritten to API-relative paths
+    lines.append("-- Dishes (image URLs)")
     for did in sorted(selected_dishes):
         d = selected_dishes[did]
         tag_id = dish_primary_tag.get(did)
@@ -331,6 +401,7 @@ def emit_seed(data) -> str:
         name_en = d["name_en"] or d["name_am"] or d["name_ru"] or f"Dish {did}"
         name_am = d["name_am"] or name_en
         name_ru = d["name_ru"] or name_en
+        img = to_image_url(d["url"])
         lines.append(
             "INSERT INTO foodme.dish ("
             "id, name_en, name_am, name_ru, description_en, price, url, "
@@ -338,7 +409,7 @@ def emit_seed(data) -> str:
             "priority_index, chef_id, dish_tag_id"
             ") VALUES ("
             f"{did}, {sql_str(name_en)}, {sql_str(name_am)}, {sql_str(name_ru)}, NULL, "
-            f"{d['price']}, {sql_str(d['url'])}, "
+            f"{d['price']}, {sql_str(img)}, "
             f"{sql_str(d['portion_en'])}, {sql_str(d['portion_am'])}, {sql_str(d['portion_ru'])}, "
             f"'ACTIVE', {d['minimum_order_count']}, {d['priority_index']}, "
             f"{d['chef_id']}, {tag_sql}"
