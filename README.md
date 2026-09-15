@@ -50,10 +50,15 @@ shapes.
 
 ## Cloud lab deploy (your own free copy)
 
-Each student can deploy a personal instance in ~15 minutes (browser only):
-see the click-by-click guide in [`docs/deployment.md`](docs/deployment.md).
+Each student can deploy a personal instance in ~10 minutes (browser only, no
+credit card) from a single Render blueprint: **fork → New Blueprint → Apply**.
+No environment variables to type — the database, API, and both websites are
+wired together automatically. See the click-by-click guide in
+[`docs/deployment.md`](docs/deployment.md).
 
-Stack: **Neon** (DB) + **Render** (API) + **Vercel** (storefront + admin).
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
+Stack: **Render only** — DB + API + both frontends from one `render.yaml`.
 Lab-only — tear down after the course.
 
 ## Quickstart
