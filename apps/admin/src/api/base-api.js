@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081';
+const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081';
+// Render's blueprint `fromService` injects a bare host (no scheme); prepend https:// so it works.
+const API_BASE_URL = /^https?:\/\//.test(RAW_API_BASE_URL) ? RAW_API_BASE_URL : `https://${RAW_API_BASE_URL}`;
 
 const BaseApi = axios.create({
     baseURL: API_BASE_URL,

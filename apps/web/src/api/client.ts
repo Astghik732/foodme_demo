@@ -1,4 +1,8 @@
-const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL || "http://localhost:8081";
+import { clearStoredAuth, readStoredAuth } from "@/lib/auth-storage";
+
+const RAW_API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL || "http://localhost:8081";
+// Render's blueprint `fromService` injects a bare host (no scheme); prepend https:// so it works.
+const API_BASE_URL: string = /^https?:\/\//.test(RAW_API_BASE_URL) ? RAW_API_BASE_URL : `https://${RAW_API_BASE_URL}`;
 
 export class ApiRequestError extends Error {
   status: number;
@@ -8,13 +12,26 @@ export class ApiRequestError extends Error {
   }
 }
 
+function authHeaders(): HeadersInit {
+  const token = readStoredAuth()?.token;
+  return token
+    ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+    : { "Content-Type": "application/json" };
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...init,
+    headers: {
+      ...authHeaders(),
+      ...(init?.headers ?? {}),
+    },
   });
 
   if (!res.ok) {
+    if (res.status === 401 && path.startsWith("/api/customer")) {
+      clearStoredAuth();
+    }
     let message = res.statusText;
     try {
       const body = await res.json();
