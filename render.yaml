@@ -1,16 +1,72 @@
-# Optional Render Blueprint
-# Students can also click through the dashboard (see docs/deployment.md).
-# Free tier sleeps when idle — first request after sleep is slow.
+# FoodMe — one-click Render Blueprint (course lab).
+# New → Blueprint → pick your fork → Apply. No env values to type by hand:
+# DATABASE_URL and VITE_API_BASE_URL are wired automatically below.
+#
+# Lab caveats (fine for an 8-session, tear-down course):
+#   - Free Postgres is deleted ~30 days after creation.
+#   - Free web services sleep when idle (~50s cold start on first request).
+databases:
+  - name: foodme-db
+    plan: free
+    databaseName: foodme
+    user: foodme
+
 services:
+  # --- Backend API (Spring Boot, Docker) ---------------------------------
   - type: web
     name: foodme-backend
     runtime: docker
+    plan: free
     dockerfilePath: ./apps/backend/Dockerfile
     dockerContext: ./apps/backend
-    plan: free
     healthCheckPath: /actuator/health
     envVars:
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: foodme-db
+          property: connectionString
+      # INTENTIONAL planted weakness — a future CORS/misconfiguration lesson
+      # depends on this being wide open. Do NOT tighten it.
       - key: FOODME_CORS_ALLOWED_ORIGINS
         value: "*"
+      # Optional error tracking — leave blank to disable (app no-ops).
+      - key: SENTRY_DSN
+        sync: false
+
+  # --- Storefront (static React) -----------------------------------------
+  - type: web
+    name: foodme-web
+    runtime: static
+    buildCommand: cd apps/web && npm ci && npm run build
+    staticPublishPath: apps/web/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: foodme-backend
+          property: host
+      - key: VITE_SENTRY_DSN
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # --- Admin back office (static React) ----------------------------------
+  - type: web
+    name: foodme-admin
+    runtime: static
+    buildCommand: cd apps/admin && npm ci && npm run build
+    staticPublishPath: apps/admin/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: foodme-backend
+          property: host
+      - key: VITE_SENTRY_DSN
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
