@@ -1,1 +1,2 @@
+org.springframework.boot.env.EnvironmentPostProcessor=\
 am.foodme.backend.config.DatabaseUrlEnvironmentPostProcessor
