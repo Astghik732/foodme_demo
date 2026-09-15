@@ -43,7 +43,6 @@ public class AdminChefController {
         return ChefResponseDto.mapEntityToDto(adminChefService.getById(id));
     }
 
-    // FM-VULN-06
     @PutMapping("/{id}")
     public ChefResponseDto update(@PathVariable Long id, @RequestBody Chef chef) {
         return ChefResponseDto.mapEntityToDto(adminChefService.update(id, chef));

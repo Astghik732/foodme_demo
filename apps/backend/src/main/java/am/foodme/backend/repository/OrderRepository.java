@@ -9,10 +9,11 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
-    // FM-VULN-01
     Optional<Order> findByNumber(String number);
 
     Page<Order> findByStatus(String status, Pageable pageable);
+
+    Page<Order> findByCustomerIdOrderByCreatedAtDesc(Long customerId, Pageable pageable);
 
     @Query(value = "SELECT nextval('foodme.order_number_seq')", nativeQuery = true)
     long nextOrderNumberSequenceValue();

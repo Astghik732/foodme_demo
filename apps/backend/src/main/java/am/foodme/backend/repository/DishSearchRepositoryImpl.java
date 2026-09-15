@@ -21,7 +21,6 @@ public class DishSearchRepositoryImpl implements DishSearchRepository {
     @SuppressWarnings("unchecked")
     public Page<Dish> searchByNameNative(String searchTerm, Pageable pageable) {
         // the dish name filter is assembled from the caller's query text before it reaches the DB
-        // FM-VULN-03
         String sql = "SELECT * FROM foodme.dish WHERE status = 'ACTIVE' AND name_en ILIKE '%" + searchTerm + "%'";
 
         Query query = entityManager.createNativeQuery(sql, Dish.class);

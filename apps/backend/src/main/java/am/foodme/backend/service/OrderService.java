@@ -6,17 +6,22 @@ import am.foodme.backend.dto.DeliveryPriceRequestDto;
 import am.foodme.backend.dto.DeliveryPriceResponseDto;
 import am.foodme.backend.dto.OrderCreateResponseDto;
 import am.foodme.backend.dto.OrderDto;
+import am.foodme.backend.dto.OrderListResponseDto;
 import am.foodme.backend.exceptionHandler.BadRequestException;
 import am.foodme.backend.exceptionHandler.NotFoundException;
 import am.foodme.backend.model.Address;
 import am.foodme.backend.model.Chef;
+import am.foodme.backend.model.Customer;
 import am.foodme.backend.model.Dish;
 import am.foodme.backend.model.Order;
 import am.foodme.backend.model.OrderDish;
 import am.foodme.backend.repository.ChefRepository;
+import am.foodme.backend.repository.CustomerRepository;
 import am.foodme.backend.repository.DishRepository;
 import am.foodme.backend.repository.OrderRepository;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,13 +35,16 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ChefRepository chefRepository;
     private final DishRepository dishRepository;
+    private final CustomerRepository customerRepository;
     private final MeterRegistry meterRegistry;
 
     public OrderService(OrderRepository orderRepository, ChefRepository chefRepository,
-                         DishRepository dishRepository, MeterRegistry meterRegistry) {
+                         DishRepository dishRepository, CustomerRepository customerRepository,
+                         MeterRegistry meterRegistry) {
         this.orderRepository = orderRepository;
         this.chefRepository = chefRepository;
         this.dishRepository = dishRepository;
+        this.customerRepository = customerRepository;
         this.meterRegistry = meterRegistry;
     }
 
@@ -58,16 +66,20 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderCreateResponseDto createOrder(OrderDto orderDto) {
+    public OrderCreateResponseDto createOrder(OrderDto orderDto, String customerEmail) {
         if (!"CASH".equals(orderDto.getPaymentType())) {
             throw new BadRequestException("Only CASH payment is supported");
         }
+
+        Customer customer = customerRepository.findByEmail(customerEmail == null ? "" : customerEmail.trim().toLowerCase())
+                .orElseThrow(() -> new NotFoundException("Customer not found"));
 
         Chef chef = chefRepository.findById(orderDto.getChefId())
                 .orElseThrow(() -> new NotFoundException("Chef " + orderDto.getChefId() + " not found"));
 
         Order order = new Order();
         order.setChef(chef);
+        order.setCustomer(customer);
         order.setStatus("NEW");
         order.setReceiverName(orderDto.getReceiverName());
         order.setReceiverPhoneNumber(orderDto.getReceiverPhoneNumber());
@@ -150,9 +162,20 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public OrderDto getOrderByNumber(String number) {
-        // FM-VULN-01
         Order order = orderRepository.findByNumber(number)
                 .orElseThrow(() -> new NotFoundException("Order " + number + " not found"));
         return OrderDto.mapEntityToDto(order);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderListResponseDto listForCustomer(String customerEmail, int page, int size) {
+        Customer customer = customerRepository.findByEmail(customerEmail == null ? "" : customerEmail.trim().toLowerCase())
+                .orElseThrow(() -> new NotFoundException("Customer not found"));
+        Page<Order> orders = orderRepository.findByCustomerIdOrderByCreatedAtDesc(
+                customer.getId(), PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50)));
+        return new OrderListResponseDto(
+                orders.getContent().stream().map(OrderDto::mapEntityToDto).toList(),
+                orders.getTotalElements()
+        );
     }
 }

@@ -7,6 +7,7 @@ import am.foodme.backend.dto.OrderDto;
 import am.foodme.backend.service.OrderService;
 import am.foodme.backend.utils.ControllerUtil;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,8 +31,9 @@ public class OrderController {
     }
 
     @PostMapping
-    public OrderCreateResponseDto createOrder(@Valid @RequestBody OrderDto orderDto) {
-        return orderService.createOrder(orderDto);
+    public OrderCreateResponseDto createOrder(@Valid @RequestBody OrderDto orderDto,
+                                              Authentication authentication) {
+        return orderService.createOrder(orderDto, authentication.getName());
     }
 
     @GetMapping("/number/{number}")

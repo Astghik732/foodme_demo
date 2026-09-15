@@ -32,7 +32,6 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, message, request, null);
     }
 
-    // FM-VULN-07
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleGeneric(Exception ex, HttpServletRequest request) {
         StringWriter sw = new StringWriter();

@@ -22,7 +22,6 @@ public class AdminAuthService {
         this.jwtService = jwtService;
     }
 
-    // FM-VULN-05
     public AdminLoginResponseDto login(AdminLoginRequestDto request) {
         Admin admin = adminRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new BadRequestException("Unknown username: " + request.getUsername()));

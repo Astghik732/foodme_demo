@@ -18,7 +18,6 @@ public class JwtService {
         this.issuer = issuer;
     }
 
-    // FM-VULN-04
     public String generateToken(String username, String role) {
         Algorithm algorithm = Algorithm.HMAC256(secret);
         return JWT.create()

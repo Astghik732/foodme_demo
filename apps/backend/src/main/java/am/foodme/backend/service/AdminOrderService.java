@@ -8,6 +8,7 @@ import am.foodme.backend.model.Order;
 import am.foodme.backend.repository.OrderRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,9 +33,10 @@ public class AdminOrderService {
 
     @Transactional(readOnly = true)
     public AdminListResponseDto<OrderDto> list(int page, int size, String status) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Order> orderPage = (status == null || status.isBlank())
-                ? orderRepository.findAll(PageRequest.of(page, size))
-                : orderRepository.findByStatus(status, PageRequest.of(page, size));
+                ? orderRepository.findAll(pageable)
+                : orderRepository.findByStatus(status, pageable);
         List<OrderDto> list = orderPage.getContent().stream()
                 .map(OrderDto::mapEntityToDto)
                 .collect(Collectors.toList());
