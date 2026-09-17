@@ -62,8 +62,8 @@ Blueprint → Apply**. See the click-by-click guide in
 > places it must match:
 >
 > 1. the backend service — `name: foodme-backend-<handle>`
-> 2. the storefront (`foodme-web`) — `VITE_API_BASE_URL: https://foodme-backend-<handle>.onrender.com`
-> 3. the admin app (`foodme-admin`) — same `VITE_API_BASE_URL`
+> 2. the storefront (`foodme-web-<handle>`) — `VITE_API_BASE_URL: https://foodme-backend-<handle>.onrender.com`
+> 3. the admin app (`foodme-admin-<handle>`) — same `VITE_API_BASE_URL`
 >
 > Keep all three identical. Everything else (database, API, both websites) is
 > wired together automatically — no other env values to type.

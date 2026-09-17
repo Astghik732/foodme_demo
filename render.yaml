@@ -25,7 +25,7 @@ services:
 
   # --- Storefront (static React) -----------------------------------------
   - type: web
-    name: foodme-web
+    name: foodme-web-armanayvazyan
     runtime: static
     buildCommand: cd apps/web && npm ci && npm run build
     staticPublishPath: apps/web/dist
@@ -41,7 +41,7 @@ services:
 
   # --- Admin back office (static React) ----------------------------------
   - type: web
-    name: foodme-admin
+    name: foodme-admin-armanayvazyan
     runtime: static
     buildCommand: cd apps/admin && npm ci && npm run build
     staticPublishPath: apps/admin/dist
