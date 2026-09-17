@@ -1,11 +1,3 @@
-# FoodMe — one-click Render Blueprint (course lab).
-# New → Blueprint → pick your fork → Apply. No env values to type by hand:
-# DATABASE_URL is wired automatically; the frontends point at the backend's
-# public URL (https://foodme-backend.onrender.com) — see the note below.
-#
-# Lab caveats (fine for an 8-session, tear-down course):
-#   - Free Postgres is deleted ~30 days after creation.
-#   - Free web services sleep when idle (~50s cold start on first request).
 databases:
   - name: foodme-db
     plan: free
@@ -15,7 +7,7 @@ databases:
 services:
   # --- Backend API (Spring Boot, Docker) ---------------------------------
   - type: web
-    name: foodme-backend
+    name: foodme-backend-armanayvazyan
     runtime: docker
     plan: free
     dockerfilePath: ./apps/backend/Dockerfile
@@ -26,11 +18,8 @@ services:
         fromDatabase:
           name: foodme-db
           property: connectionString
-      # INTENTIONAL planted weakness — a future CORS/misconfiguration lesson
-      # depends on this being wide open. Do NOT tighten it.
       - key: FOODME_CORS_ALLOWED_ORIGINS
         value: "*"
-      # Optional error tracking — leave blank to disable (app no-ops).
       - key: SENTRY_DSN
         sync: false
 
@@ -41,15 +30,8 @@ services:
     buildCommand: cd apps/web && npm ci && npm run build
     staticPublishPath: apps/web/dist
     envVars:
-      # The browser needs the backend's PUBLIC URL. Render's `fromService …
-      # property: host` returns the internal host slug ("foodme-backend"),
-      # which is not resolvable from a browser — so we set the public URL
-      # explicitly. On a fresh fork the backend service is named
-      # `foodme-backend`, so Render gives it https://foodme-backend.onrender.com.
-      # If Render appended a suffix (name already taken in your account),
-      # update this to match your backend's real URL.
       - key: VITE_API_BASE_URL
-        value: https://foodme-backend.onrender.com
+        value: https://foodme-backend-armanayvazyan.onrender.com
       - key: VITE_SENTRY_DSN
         sync: false
     routes:
@@ -64,10 +46,8 @@ services:
     buildCommand: cd apps/admin && npm ci && npm run build
     staticPublishPath: apps/admin/dist
     envVars:
-      # See the note on foodme-web above — the browser needs the backend's
-      # public URL, not the internal `fromService` host slug.
       - key: VITE_API_BASE_URL
-        value: https://foodme-backend.onrender.com
+        value: https://foodme-backend-armanayvazyan.onrender.com
       - key: VITE_SENTRY_DSN
         sync: false
     routes:

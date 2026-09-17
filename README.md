@@ -51,10 +51,22 @@ shapes.
 ## Cloud lab deploy (your own free copy)
 
 Each student can deploy a personal instance in ~10 minutes (browser only, no
-credit card) from a single Render blueprint: **fork → New Blueprint → Apply**.
-No environment variables to type — the database, API, and both websites are
-wired together automatically. See the click-by-click guide in
+credit card) from a single Render blueprint: **fork → pick your handle → New
+Blueprint → Apply**. See the click-by-click guide in
 [`docs/deployment.md`](docs/deployment.md).
+
+> **After forking, edit `render.yaml` first.** `*.onrender.com` names are
+> globally unique, so the backend needs a name nobody else has taken or Render
+> appends a random suffix that breaks the frontends' hardcoded URL. Replace the
+> handle `armanayvazyan` with your own (e.g. your GitHub username) in the **three**
+> places it must match:
+>
+> 1. the backend service — `name: foodme-backend-<handle>`
+> 2. the storefront (`foodme-web`) — `VITE_API_BASE_URL: https://foodme-backend-<handle>.onrender.com`
+> 3. the admin app (`foodme-admin`) — same `VITE_API_BASE_URL`
+>
+> Keep all three identical. Everything else (database, API, both websites) is
+> wired together automatically — no other env values to type.
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
