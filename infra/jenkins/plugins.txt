@@ -1,7 +1,0 @@
-configuration-as-code
-workflow-aggregator
-git
-junit
-docker-workflow
-job-dsl
-authorize-project
