@@ -31,7 +31,10 @@ services:
     staticPublishPath: apps/web/dist
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://foodme-backend-armanayvazyan.onrender.com
+        fromService:
+          name: foodme-backend-armanayvazyan
+          type: web
+          property: host
       - key: VITE_SENTRY_DSN
         sync: false
     routes:
@@ -47,7 +50,10 @@ services:
     staticPublishPath: apps/admin/dist
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://foodme-backend-armanayvazyan.onrender.com
+        fromService:
+          name: foodme-backend-armanayvazyan
+          type: web
+          property: host
       - key: VITE_SENTRY_DSN
         sync: false
     routes:
