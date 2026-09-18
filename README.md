@@ -68,6 +68,16 @@ Blueprint → Apply**. See the click-by-click guide in
 > Keep all three identical. Everything else (database, API, both websites) is
 > wired together automatically — no other env values to type.
 
+> **Before deploying, set up error tracking.** Register a free account at
+> [glitchtip.com](https://glitchtip.com/) and create **three** projects — one
+> each for `foodme-web`, `foodme-admin`, and `foodme-backend`. Copy each
+> project's **DSN** key. During the Render Blueprint step you'll be prompted for
+> the three `sync: false` env vars, so paste the DSNs to match:
+>
+> 1. backend service → `SENTRY_DSN` = backend project's DSN
+> 2. storefront (`foodme-web-<handle>`) → `VITE_SENTRY_DSN` = web project's DSN
+> 3. admin app (`foodme-admin-<handle>`) → `VITE_SENTRY_DSN` = admin project's DSN
+
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
 Stack: **Render only** — DB + API + both frontends from one `render.yaml`.
