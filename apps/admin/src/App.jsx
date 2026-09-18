@@ -22,6 +22,7 @@ function App() {
     return (
         <SnackbarProvider maxSnack={3}>
             <Admin
+                basename={import.meta.env.BASE_URL.replace(/\/$/, '')}
                 title="FoodMe Admin"
                 dataProvider={dataProvider}
                 authProvider={authProvider}

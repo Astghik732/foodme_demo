@@ -1,8 +1,15 @@
 import { clearStoredAuth, readStoredAuth } from "@/lib/auth-storage";
 
-const RAW_API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL || "http://localhost:8081";
-// Render's blueprint `fromService` injects a bare host (no scheme); prepend https:// so it works.
-const API_BASE_URL: string = /^https?:\/\//.test(RAW_API_BASE_URL) ? RAW_API_BASE_URL : `https://${RAW_API_BASE_URL}`;
+// Same-origin deploy: the backend serves this SPA and the API from one host, so
+// the production default is an empty base (relative "/api/..." calls). Local `npm run
+// dev` talks to the backend on :8081. An explicit VITE_API_BASE_URL still wins.
+const ENV_BASE = import.meta.env.VITE_API_BASE_URL as string | undefined;
+const RAW_API_BASE_URL: string = ENV_BASE ?? (import.meta.env.DEV ? "http://localhost:8081" : "");
+// A bare host (no scheme) gets https:// prepended for back-compat; "" stays relative.
+const API_BASE_URL: string =
+  RAW_API_BASE_URL === "" || /^https?:\/\//.test(RAW_API_BASE_URL)
+    ? RAW_API_BASE_URL
+    : `https://${RAW_API_BASE_URL}`;
 
 export class ApiRequestError extends Error {
   status: number;

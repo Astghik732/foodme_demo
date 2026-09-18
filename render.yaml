@@ -5,58 +5,23 @@ databases:
     user: foodme
 
 services:
-  # --- Backend API (Spring Boot, Docker) ---------------------------------
+  # --- One service serves everything on a single origin ------------------
+  # The Docker image bundles the built storefront (at "/") and admin back
+  # office (at "/backoffice") alongside the Spring Boot API. Because the SPAs
+  # and the API share one host, there is no cross-service URL to resolve and
+  # no CORS to configure — the same blueprint deploys cleanly for anyone,
+  # regardless of the random *.onrender.com suffix Render assigns.
   - type: web
     name: foodme-backend-armanayvazyan
     runtime: docker
     plan: free
     dockerfilePath: ./apps/backend/Dockerfile
-    dockerContext: ./apps/backend
+    dockerContext: .
     healthCheckPath: /actuator/health
     envVars:
       - key: DATABASE_URL
         fromDatabase:
           name: foodme-db
           property: connectionString
-      - key: FOODME_CORS_ALLOWED_ORIGINS
-        value: "*"
       - key: SENTRY_DSN
         sync: false
-
-  # --- Storefront (static React) -----------------------------------------
-  - type: web
-    name: foodme-web-armanayvazyan
-    runtime: static
-    buildCommand: cd apps/web && npm ci && npm run build
-    staticPublishPath: apps/web/dist
-    envVars:
-      - key: VITE_API_BASE_URL
-        fromService:
-          name: foodme-backend-armanayvazyan
-          type: web
-          property: host
-      - key: VITE_SENTRY_DSN
-        sync: false
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-
-  # --- Admin back office (static React) ----------------------------------
-  - type: web
-    name: foodme-admin-armanayvazyan
-    runtime: static
-    buildCommand: cd apps/admin && npm ci && npm run build
-    staticPublishPath: apps/admin/dist
-    envVars:
-      - key: VITE_API_BASE_URL
-        fromService:
-          name: foodme-backend-armanayvazyan
-          type: web
-          property: host
-      - key: VITE_SENTRY_DSN
-        sync: false
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html

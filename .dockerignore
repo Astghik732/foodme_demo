@@ -1,0 +1,9 @@
+# Keep the Docker build context small and reproducible: never ship host-built
+# artifacts into the image (frontends are built inside the Dockerfile).
+**/node_modules
+**/dist
+**/build
+**/.gradle
+.git
+.idea
+**/*.log
