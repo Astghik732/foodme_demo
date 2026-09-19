@@ -55,33 +55,42 @@ credit card) from a single Render blueprint: **fork → pick your handle → New
 Blueprint → Apply**. See the click-by-click guide in
 [`docs/deployment.md`](docs/deployment.md).
 
-> **After forking, edit `render.yaml` first.** `*.onrender.com` names are
-> globally unique, so the backend needs a name nobody else has taken or Render
-> appends a random suffix that breaks the frontends' hardcoded URL. Replace the
-> handle `armanayvazyan` with your own (e.g. your GitHub username) in the **three**
-> places it must match:
+> **After forking, edit `render.yaml` first.** Everything runs as **one**
+> Render service that serves the API and both frontends on a single origin, so
+> there is no cross-service URL to keep in sync. You only need to give the
+> service a name nobody else has taken — replace the handle `armanayvazyan`
+> with your own (e.g. your GitHub username):
 >
-> 1. the backend service — `name: foodme-backend-<handle>`
-> 2. the storefront (`foodme-web-<handle>`) — `VITE_API_BASE_URL: https://foodme-backend-<handle>.onrender.com`
-> 3. the admin app (`foodme-admin-<handle>`) — same `VITE_API_BASE_URL`
+> ```yaml
+> name: foodme-<your-handle>
+> ```
 >
-> Keep all three identical. Everything else (database, API, both websites) is
-> wired together automatically — no other env values to type.
+> Because the storefront, admin, and API share one host, the exact name (and
+> any random suffix Render adds on a collision) no longer affects whether the
+> app works. After deploy you'll find the storefront at `/`, the admin back
+> office at `/backoffice`, and the API under `/api` and `/admin`.
 
 > **Before deploying, set up error tracking.** Register a free account at
 > [glitchtip.com](https://glitchtip.com/) and create **three** projects — one
-> each for `foodme-web`, `foodme-admin`, and `foodme-backend`. Copy each
-> project's **DSN** key. During the Render Blueprint step you'll be prompted for
-> the three `sync: false` env vars, so paste the DSNs to match:
+> each for the backend, storefront, and admin. During the Blueprint step Render
+> prompts for three `sync: false` env vars; paste each project's **DSN** to match:
 >
-> 1. backend service → `SENTRY_DSN` = backend project's DSN
-> 2. storefront (`foodme-web-<handle>`) → `VITE_SENTRY_DSN` = web project's DSN
-> 3. admin app (`foodme-admin-<handle>`) → `VITE_SENTRY_DSN` = admin project's DSN
+> | Env var | Project | Read at |
+> |---|---|---|
+> | `SENTRY_DSN` | backend | runtime |
+> | `VITE_SENTRY_DSN_WEB` | storefront | build time |
+> | `VITE_SENTRY_DSN_ADMIN` | admin | build time |
+>
+> Leave any blank to disable tracking for that app. The two `VITE_` values are
+> baked into the frontend bundles during the Docker build, so changing them
+> later needs a fresh deploy, not just a restart. Once live, all three apps also
+> emit a periodic demo "background task" that fails ~1 run in 10, so GlitchTip
+> shows a realistic trickle of events without anyone clicking around.
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
-Stack: **Render only** — DB + API + both frontends from one `render.yaml`.
-Lab-only — tear down after the course.
+Stack: **Render only** — one service (API + both frontends) plus a Postgres
+database, all from one `render.yaml`. Lab-only — tear down after the course.
 
 ## Quickstart
 
