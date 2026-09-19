@@ -5,14 +5,12 @@ databases:
     user: foodme
 
 services:
-  # --- One service serves everything on a single origin ------------------
-  # The Docker image bundles the built storefront (at "/") and admin back
-  # office (at "/backoffice") alongside the Spring Boot API. Because the SPAs
-  # and the API share one host, there is no cross-service URL to resolve and
-  # no CORS to configure — the same blueprint deploys cleanly for anyone,
-  # regardless of the random *.onrender.com suffix Render assigns.
+  # Each deployer sets this to foodme-<their-github-username>. It only names
+  # the service and its *.onrender.com subdomain — because the SPAs and API
+  # are same-origin, the exact name (and any random suffix Render adds on a
+  # collision) has no effect on whether the app works.
   - type: web
-    name: foodme-backend-armanayvazyan
+    name: foodme-armanayvazyan
     runtime: docker
     plan: free
     dockerfilePath: ./apps/backend/Dockerfile
