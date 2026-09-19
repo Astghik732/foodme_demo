@@ -8,6 +8,10 @@ WORKDIR /web
 COPY apps/web/package.json apps/web/package-lock.json ./
 RUN npm ci
 COPY apps/web/ ./
+# VITE_SENTRY_DSN is baked into the bundle at build time. Render injects the
+# service env var of the same name as a build arg; empty = frontend Sentry off.
+ARG VITE_SENTRY_DSN_WEB=""
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN_WEB
 RUN npm run build
 
 # --- Build admin back office (react-admin + Vite) ----------------------------
@@ -16,6 +20,8 @@ WORKDIR /admin
 COPY apps/admin/package.json apps/admin/package-lock.json ./
 RUN npm ci
 COPY apps/admin/ ./
+ARG VITE_SENTRY_DSN_ADMIN=""
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN_ADMIN
 RUN npm run build
 
 # --- Build backend (Spring Boot) and bundle the SPAs as static resources -----
