@@ -5,10 +5,6 @@ databases:
     user: foodme
 
 services:
-  # Each deployer sets this to foodme-<their-github-username>. It only names
-  # the service and its *.onrender.com subdomain — because the SPAs and API
-  # are same-origin, the exact name (and any random suffix Render adds on a
-  # collision) has no effect on whether the app works.
   - type: web
     name: foodme-armanayvazyan
     runtime: docker
