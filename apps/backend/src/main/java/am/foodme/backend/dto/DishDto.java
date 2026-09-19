@@ -39,7 +39,7 @@ public class DishDto {
         DishDto dto = new DishDto();
         dto.setId(entity.getId());
         dto.setNameEn(entity.getNameEn());
-        dto.setNameHy(entity.getNameAm());
+        dto.setNameHy(entity.getNameAm().trim());
         dto.setNameRu(entity.getNameRu());
         dto.setDescriptionEn(entity.getDescriptionEn());
         dto.setPrice(entity.getPrice());

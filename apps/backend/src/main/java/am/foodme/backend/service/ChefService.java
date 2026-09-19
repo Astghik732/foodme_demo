@@ -67,6 +67,8 @@ public class ChefService {
 
         List<Dish> dishes = dishRepository.findByChefId(chef.getId(), PageRequest.of(0, 200)).getContent();
         List<DishDto> sortedDishes = dishes.stream()
+                // reload each dish so its additions/tag reflect the latest state
+                .map(d -> dishRepository.findById(d.getId()).orElse(d))
                 .map(DishDto::mapEntityToDto)
                 .sorted(Comparator
                         .<DishDto>comparingInt(d -> {

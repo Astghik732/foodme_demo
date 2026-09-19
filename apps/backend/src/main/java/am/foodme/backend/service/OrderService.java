@@ -114,6 +114,7 @@ public class OrderService {
             orderDish.setQuantity(item.getQuantity());
 
             double dishTotal = dish.getPrice();
+            double additionsTotal = 0.0;
             if (item.getAdditions() != null && dish.getAdditions() != null) {
                 List<am.foodme.backend.model.OrderDishAddition> orderAdditions = new ArrayList<>();
                 for (am.foodme.backend.dto.CreateOrderDishAdditionDto addDto : item.getAdditions()) {
@@ -128,7 +129,7 @@ public class OrderService {
                         oda.setNameRu(matchingAddition.getNameRu());
                         oda.setPrice(matchingAddition.getPrice());
                         orderAdditions.add(oda);
-                        dishTotal += matchingAddition.getPrice();
+                        additionsTotal += matchingAddition.getPrice();
                     }
                 }
                 orderDish.setAdditions(orderAdditions);
@@ -137,7 +138,7 @@ public class OrderService {
             orderDishes.add(orderDish);
 
             // FM-BUG-01
-            subtotal += (int) (dishTotal * item.getQuantity());
+            subtotal += (int) (dishTotal * item.getQuantity()) + additionsTotal;
 
         }
         order.setOrderDishList(orderDishes);
