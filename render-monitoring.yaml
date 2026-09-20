@@ -1,0 +1,67 @@
+# FoodMe monitoring stack — SEPARATE blueprint, deploy AFTER the main app.
+# Apply this into the SAME Render project + region as the app so private
+# networking (service-name DNS) resolves. All services are free/ephemeral and
+# never auto-redeploy on app code pushes (autoDeploy: false).
+
+services:
+  # --- Prometheus (private) -------------------------------------------------
+  - type: pserv
+    name: prometheus
+    runtime: docker
+    plan: free
+    region: oregon
+    autoDeploy: false
+    dockerfilePath: ./infra/monitoring/prometheus/Dockerfile
+    dockerContext: ./infra/monitoring/prometheus
+
+  # --- Loki (private) -------------------------------------------------------
+  - type: pserv
+    name: loki
+    runtime: docker
+    plan: free
+    region: oregon
+    autoDeploy: false
+    dockerfilePath: ./infra/monitoring/loki/Dockerfile
+    dockerContext: ./infra/monitoring/loki
+
+  # --- Grafana (public) -----------------------------------------------------
+  - type: web
+    name: grafana
+    runtime: docker
+    plan: free
+    region: oregon
+    autoDeploy: false
+    dockerfilePath: ./infra/monitoring/grafana/Dockerfile
+    dockerContext: ./infra/monitoring/grafana
+    healthCheckPath: /api/health
+    envVars:
+      - key: GF_SECURITY_ADMIN_PASSWORD
+        sync: false
+      - key: GF_SECURITY_ADMIN_USER
+        value: admin
+      - key: GF_USERS_ALLOW_SIGN_UP
+        value: "false"
+
+  # --- Grafana MCP (public; serves metrics + logs + dashboards) -------------
+  - type: web
+    name: grafana-mcp
+    runtime: image
+    plan: free
+    region: oregon
+    autoDeploy: false
+    image:
+      url: docker.io/grafana/mcp-grafana:1.5.1
+    # -allowed-hosts "*" is required behind Render's TLS-terminating proxy
+    # (Host header is the onrender.com domain, which the default policy rejects).
+    dockerCommand: /bin/sh -c 'exec /app/mcp-grafana -transport streamable-http -address 0.0.0.0:$PORT -allowed-hosts "*"'
+    healthCheckPath: /healthz
+    envVars:
+      - key: GRAFANA_URL
+        value: http://grafana:10000
+      # Service-account token the MCP uses to call Grafana (queries Prometheus + Loki + dashboards)
+      - key: GRAFANA_SERVICE_ACCOUNT_TOKEN
+        sync: false
+      # Bearer token callers MUST present (Authorization: Bearer ...) — the MCP
+      # refuses to serve publicly without it. This is the public MCP's auth.
+      - key: MCP_GRAFANA_SERVER_TOKEN
+        sync: false

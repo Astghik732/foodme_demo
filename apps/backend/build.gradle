@@ -37,6 +37,10 @@ dependencies {
     // Observability: Prometheus scrape endpoint, JSON logs for Loki, Sentry/GlitchTip
     runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
     implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+    // Push JSON logs to Loki when LOKI_PUSH_URL is set (no-op otherwise)
+    implementation 'com.github.loki4j:loki-logback-appender:1.5.2'
+    // Enables the logback <if> conditional used to gate the Loki appender
+    implementation 'org.codehaus.janino:janino:3.1.12'
     implementation 'io.sentry:sentry-spring-boot-starter-jakarta:7.14.0'
     implementation 'io.sentry:sentry-logback:7.14.0'
 
