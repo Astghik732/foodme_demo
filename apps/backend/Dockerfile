@@ -44,4 +44,14 @@ COPY --from=build /app/build/libs/foodme-backend-0.0.1-SNAPSHOT.jar app.jar
 
 ENV SPRING_PROFILES_ACTIVE=docker
 EXPOSE 8081
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Tuned for Render's free instance (512 MB RAM, 0.1 CPU). An untuned JVM needs
+# ~8+ minutes of throttled CPU just to JIT its way through Spring Boot startup,
+# which runs into Render's ~15-minute deploy health-check window and fails the
+# deploy. C1-only compilation + Serial GC roughly halve time-to-healthy; the
+# heap cap leaves headroom for metaspace/stacks under the 512 MB limit.
+ENTRYPOINT ["java", \
+  "-XX:TieredStopAtLevel=1", \
+  "-XX:+UseSerialGC", \
+  "-XX:MaxRAMPercentage=60", \
+  "-Xss512k", \
+  "-jar", "app.jar"]

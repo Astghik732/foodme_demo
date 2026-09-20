@@ -12,7 +12,7 @@
         </appender>
     </springProfile>
 
-    <springProfile name="docker">
+    <springProfile name="!local">
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder class="net.logstash.logback.encoder.LogstashEncoder">
                 <includeMdcKeyName>traceId</includeMdcKeyName>
@@ -20,24 +20,6 @@
                 <customFields>{"app":"foodme-backend"}</customFields>
             </encoder>
         </appender>
-
-        <if condition='!property("lokiPushUrl").isEmpty()'>
-            <then>
-                <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
-                    <!-- Flush at least every 5s so logs show up promptly (default is 60s) -->
-                    <batchTimeoutMs>5000</batchTimeoutMs>
-                    <http>
-                        <url>${lokiPushUrl}</url>
-                    </http>
-                    <format>
-                        <label>
-                            <pattern>app=foodme-backend</pattern>
-                        </label>
-                        <message class="com.github.loki4j.logback.JsonLayout"/>
-                    </format>
-                </appender>
-            </then>
-        </if>
     </springProfile>
 
     <appender name="SENTRY" class="io.sentry.logback.SentryAppender">
@@ -52,10 +34,32 @@
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="SENTRY"/>
-        <if condition='!property("lokiPushUrl").isEmpty()'>
-            <then>
-                <appender-ref ref="LOKI"/>
-            </then>
-        </if>
     </root>
+
+    <!-- logback 1.5.8+ (Spring Boot 3.3.x) only honours <if> as a DIRECT child
+         of <configuration>. Nesting it inside <springProfile>, <appender> or
+         <root> makes Joran abort the surrounding element, which silently
+         dropped ALL log output (console and Loki alike). Keep the Loki
+         conditional here at top level; the second <root> merges the extra
+         appender-ref into the root logger. -->
+    <if condition='!property("lokiPushUrl").isEmpty()'>
+        <then>
+            <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
+                <!-- Flush at least every 5s so logs show up promptly (default is 60s) -->
+                <batchTimeoutMs>5000</batchTimeoutMs>
+                <http>
+                    <url>${lokiPushUrl}</url>
+                </http>
+                <format>
+                    <label>
+                        <pattern>app=foodme-backend</pattern>
+                    </label>
+                    <message class="com.github.loki4j.logback.JsonLayout"/>
+                </format>
+            </appender>
+            <root level="INFO">
+                <appender-ref ref="LOKI"/>
+            </root>
+        </then>
+    </if>
 </configuration>
