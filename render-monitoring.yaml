@@ -1,99 +1,58 @@
 # FoodMe monitoring stack — SEPARATE blueprint, deploy AFTER the main app,
-# into the same region. All services are free/ephemeral and never auto-redeploy
-# on app code pushes (autoDeploy: false).
+# into the same region. Free/ephemeral, and it never auto-redeploys on app code
+# pushes (autoDeploy: false).
 #
-# IMPORTANT — free tier has NO private networking you can receive on:
-# Render's free web services can SEND private-network requests but cannot
-# RECEIVE them, so private hostnames (foodme-loki:10000, etc.) do NOT work here.
-# Every internal hop therefore uses the target's PUBLIC *.onrender.com URL,
-# supplied per-deploy via the `sync: false` env vars below (each is unique to
-# your deploy — copy it from that service's page in the Render dashboard):
-#   foodme-prometheus  -> BACKEND_HOST  (your backend's public host, no scheme/port)
-#   Grafana            -> PROMETHEUS_URL, LOKI_URL  (full https URLs)
-#   foodme-grafana-mcp -> GRAFANA_URL   (Grafana's full https URL)
-#   backend service    -> LOKI_PUSH_URL (Loki's https URL + /loki/api/v1/push)
-# For hash-free private DNS instead, upgrade the receiving services to a paid
-# plan (plan: starter) — then use foodme-<name>:10000 URLs. See README.
+# ONE service runs Prometheus + Loki + Grafana + the Grafana MCP behind nginx.
+# They talk to each other over loopback inside the container, so none of the
+# internal wiring needs URLs. That matters here: Render's free web services can
+# SEND private-network requests but cannot RECEIVE them, so private hostnames
+# (foodme-loki:10000, ...) never resolve, and each split-out service would have
+# needed its neighbours' per-deploy *.onrender.com URLs pasted in by hand.
+#
+# What you must still set by hand — ONE variable, because the backend is a
+# genuinely separate service:
+#   BACKEND_HOST  = your backend's public host, no scheme and no port
+#                   e.g. foodme-armanayvazyan-xxxx.onrender.com
+# And one on the BACKEND side (in render.yaml's service):
+#   LOKI_PUSH_URL = https://<this service>.onrender.com/loki/api/v1/push
+#
+# Routes on the resulting public URL:
+#   /        Grafana (login admin / admin)
+#   /prom/   Prometheus
+#   /loki/   Loki  (the app pushes to /loki/api/v1/push)
+#   /mcp     Grafana MCP (streamable-http)
+#
+# Retention is 2 days (Prometheus --storage.tsdb.retention.time=48h, Loki
+# compactor with retention_period 48h). Note the free plan has no persistent
+# disk, so in practice data is also lost on every restart/spin-down; attach a
+# disk on a paid plan if you need it to survive.
 
 services:
-  # --- Prometheus -----------------------------------------------------------
   - type: web
-    name: foodme-prometheus
+    name: foodme-monitoring
     runtime: docker
     plan: free
     region: oregon
     autoDeploy: false
-    dockerfilePath: ./infra/monitoring/prometheus/Dockerfile
-    dockerContext: ./infra/monitoring/prometheus
-    healthCheckPath: /-/healthy
-    envVars:
-      # Backend's PUBLIC host (no scheme, no port) — Prometheus scrapes it over
-      # https because free web services can't be reached privately.
-      # e.g. foodme-armanayvazyan-xxxx.onrender.com
-      - key: BACKEND_HOST
-        sync: false
-
-  # --- Loki -----------------------------------------------------------------
-  - type: web
-    name: foodme-loki
-    runtime: docker
-    plan: free
-    region: oregon
-    autoDeploy: false
-    dockerfilePath: ./infra/monitoring/loki/Dockerfile
-    dockerContext: ./infra/monitoring/loki
-    healthCheckPath: /ready
-
-  # --- Grafana --------------------------------------------------------------
-  - type: web
-    name: foodme-armanayvazyan-grafana
-    runtime: docker
-    plan: free
-    region: oregon
-    autoDeploy: false
-    dockerfilePath: ./infra/monitoring/grafana/Dockerfile
-    dockerContext: ./infra/monitoring/grafana
+    dockerfilePath: ./infra/monitoring/stack/Dockerfile
+    # Context is the monitoring dir so the Dockerfile can COPY stack/*.
+    dockerContext: ./infra/monitoring
+    # Grafana owns "/", so its health endpoint is the stack's health check.
     healthCheckPath: /api/health
     envVars:
-      - key: GF_SECURITY_ADMIN_PASSWORD
-        value: admin
+      # The one hop that leaves the container: Prometheus scrapes the backend
+      # over https on :443, because free services can't be reached privately.
+      - key: BACKEND_HOST
+        sync: false
       - key: GF_SECURITY_ADMIN_USER
+        value: admin
+      - key: GF_SECURITY_ADMIN_PASSWORD
         value: admin
       - key: GF_USERS_ALLOW_SIGN_UP
         value: "false"
-      # PUBLIC URLs of Prometheus/Loki (free web services can't be reached
-      # privately). Grafana expands these into datasources.yml at startup.
-      # e.g. https://foodme-prometheus-xxxx.onrender.com
-      - key: PROMETHEUS_URL
-        sync: false
-      # e.g. https://foodme-loki-xxxx.onrender.com
-      - key: LOKI_URL
-        sync: false
-
-  # --- Grafana MCP (serves metrics + logs + dashboards) ---------------------
-  - type: web
-    name: foodme-grafana-mcp
-    # Built from our own Dockerfile (which just wraps grafana/mcp-grafana), NOT
-    # `runtime: image` + `dockerCommand`. Render wraps dockerCommand in its own
-    # `sh -c "..."`, so the quotes required for `-allowed-hosts "*"` collide with
-    # that wrapper and the container exits 127 ("not found"). Owning the image
-    # lets us control the start command's quoting — same as the other services.
-    runtime: docker
-    plan: free
-    region: oregon
-    autoDeploy: false
-    dockerfilePath: ./infra/monitoring/mcp/Dockerfile
-    dockerContext: ./infra/monitoring/mcp
-    healthCheckPath: /healthz
-    envVars:
-      # Grafana's PUBLIC URL (free web services can't be reached privately).
-      # e.g. https://foodme-armanayvazyan-grafana-xxxx.onrender.com
-      - key: GRAFANA_URL
-        sync: false
-      # Service-account token the MCP uses to call Grafana (queries Prometheus + Loki + dashboards)
+      # Optional. Unset just means the MCP can't query Grafana / doesn't
+      # require callers to authenticate — the service still deploys green.
       - key: GRAFANA_SERVICE_ACCOUNT_TOKEN
         sync: false
-      # Bearer token callers MUST present (Authorization: Bearer ...) — the MCP
-      # refuses to serve publicly without it. This is the public MCP's auth.
       - key: MCP_GRAFANA_SERVER_TOKEN
         sync: false

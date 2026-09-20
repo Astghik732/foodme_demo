@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # The backend is a SEPARATE Render service, so this is the one hop that still
+  # needs wiring: __BACKEND_HOST__ is substituted from the BACKEND_HOST env var
+  # at startup (Prometheus does not expand env vars in its config). Set it to
+  # the backend's public host only — no scheme, no port. Free web services
+  # can't be reached privately, hence https on :443.
+  - job_name: foodme-backend
+    metrics_path: /actuator/prometheus
+    scheme: https
+    static_configs:
+      - targets: ["__BACKEND_HOST__:443"]
+        labels:
+          app: foodme-backend

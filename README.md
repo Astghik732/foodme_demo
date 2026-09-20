@@ -33,41 +33,46 @@ Register a free account at [glitchtip.com](https://glitchtip.com/) and create
    `/backoffice`, and the API under `/api` and `/admin`.
 
 Note: 
-> Leave `LOKI_PUSH_URL` blank for now — you set it in step 3 once Loki exists.
+> Leave `LOKI_PUSH_URL` blank for now — you set it in step 3 once monitoring exists.
 
 ---
 
-## 3. Render — monitoring services
+## 3. Render — monitoring service
 
-> **Free tier = public URLs, not private DNS.** Render's free web services can
-> *send* private-network requests but **cannot receive** them, so private
-> hostnames like `foodme-loki:10000` do **not** work. Every service therefore
-> talks to the others over their **public** `*.onrender.com` URL. Each URL is
-> unique to your deploy — copy it from that service's page in the Render
-> dashboard (it's shown under the service name). Full private DNS instead? Put
-> the receiving services on a paid plan (`plan: starter`).
+Prometheus, Loki, Grafana and the Grafana MCP all run in **one** service,
+reached on one URL:
 
-1. **New → Blueprint → `render-monitoring.yaml`.** Wait for `foodme-prometheus`,
-   `foodme-loki`, and `foodme-*-grafana` to go live, then copy each service's
-   public URL.
+| Path | Component |
+|---|---|
+| `/` | Grafana (`admin` / `admin`) |
+| `/prom/` | Prometheus |
+| `/loki/` | Loki |
+| `/mcp` | Grafana MCP |
 
-2. **Wire the public URLs** (Render → service → Environment). No file edits —
-   just set these env vars, then redeploy each service:
+> **Why one service?** Render's free web services can *send* private-network
+> requests but **cannot receive** them, so private hostnames like
+> `foodme-loki:10000` do **not** work. Keeping the components in one container
+> lets them talk over loopback, which is what reduces the setup below to two
+> variables instead of six public URLs.
 
-   | Service | Env var | Value (your own public URL) |
-   |---|---|---|
-   | `foodme-prometheus` | `BACKEND_HOST` | backend host only, e.g. `foodme-<user>-xxxx.onrender.com` |
-   | `foodme-*-grafana` | `PROMETHEUS_URL` | `https://foodme-prometheus-xxxx.onrender.com` |
-   | `foodme-*-grafana` | `LOKI_URL` | `https://foodme-loki-xxxx.onrender.com` |
-   | `foodme-grafana-mcp` | `GRAFANA_URL` | `https://foodme-<user>-grafana-xxxx.onrender.com` |
+1. **New → Blueprint → `render-monitoring.yaml`.** Wait for `foodme-monitoring`
+   to go live, then copy its public URL.
+
+2. **Point Prometheus at your backend.** On `foodme-monitoring` → Environment,
+   set `BACKEND_HOST` to your backend's host only — no scheme, no port, e.g.
+   `foodme-<user>-xxxx.onrender.com` — then redeploy it.
 
 3. **Ship logs.** On the **app** service set `LOKI_PUSH_URL` to
-   `https://foodme-loki-xxxx.onrender.com/loki/api/v1/push` and let it redeploy.
+   `https://foodme-monitoring-xxxx.onrender.com/loki/api/v1/push` and let it
+   redeploy.
 
-4. **Grafana MCP tokens** — *optional for deployment*. `foodme-grafana-mcp`
-   deploys and passes its health check with none of these set; you only need
-   them to actually query Grafana through the MCP (and to require auth from
-   callers). Set them on the `foodme-grafana-mcp` service, then redeploy it:
+That's both variables. Datasources, dashboards, and the MCP's Grafana
+connection are provisioned automatically.
+
+4. **Grafana MCP tokens** — *optional for deployment*. The service deploys and
+   passes its health check with none of these set; you only need them to
+   actually query Grafana through the MCP (and to require auth from callers).
+   Set them on `foodme-monitoring`, then redeploy it:
    - `GRAFANA_SERVICE_ACCOUNT_TOKEN` — Grafana → Administration → Service
      accounts → create SA (Editor) → generate token.
    - `MCP_GRAFANA_SERVER_TOKEN` — your own secret: `openssl rand -hex 32`.
@@ -78,3 +83,8 @@ Grafana login: `admin` / `admin` (change it after first login).
 
 **Verify:** Grafana → Explore → Prometheus → `up{app="foodme-backend"}` = `1`;
 Loki → `{app="foodme-backend"}` shows recent lines.
+
+**Retention is 2 days** for both metrics and logs. Be aware the free plan has
+no persistent disk, so data is also wiped on every restart/spin-down, and a
+sleeping instance takes ~15-30s to wake — a first query after idle can time out
+and render as "no data". See `infra/monitoring/README.md`.
