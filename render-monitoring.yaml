@@ -73,20 +73,17 @@ services:
   # --- Grafana MCP (serves metrics + logs + dashboards) ---------------------
   - type: web
     name: foodme-grafana-mcp
-    runtime: image
+    # Built from our own Dockerfile (which just wraps grafana/mcp-grafana), NOT
+    # `runtime: image` + `dockerCommand`. Render wraps dockerCommand in its own
+    # `sh -c "..."`, so the quotes required for `-allowed-hosts "*"` collide with
+    # that wrapper and the container exits 127 ("not found"). Owning the image
+    # lets us control the start command's quoting — same as the other services.
+    runtime: docker
     plan: free
     region: oregon
     autoDeploy: false
-    image:
-      url: docker.io/grafana/mcp-grafana:1.5.1
-    # -allowed-hosts "*" is required behind Render's TLS-terminating proxy
-    # (Host header is the onrender.com domain, which the default policy rejects).
-    # Wrap in `sh -c "..."` (double-quoted) so Render's command tokenizer keeps
-    # it intact and $PORT expands at runtime. Do NOT use single-quote-outer /
-    # double-quote-inner ('...exec..."*"') — Render mis-tokenizes that nesting
-    # and the container exits 127 ("not found"). Inner `'*'` disables Host
-    # validation (safe here: Render's proxy terminates TLS in front of us).
-    dockerCommand: sh -c "/app/mcp-grafana -transport streamable-http -address 0.0.0.0:$PORT -allowed-hosts '*'"
+    dockerfilePath: ./infra/monitoring/mcp/Dockerfile
+    dockerContext: ./infra/monitoring/mcp
     healthCheckPath: /healthz
     envVars:
       # Grafana's PUBLIC URL (free web services can't be reached privately).
