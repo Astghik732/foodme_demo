@@ -4,13 +4,16 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
-    # Private hostname:port of the Prometheus service on Render.
-    url: http://prometheus:10000
+    # Fixed uid so provisioned dashboards can reference this datasource.
+    uid: prometheus
+    # Private hostname:port of the Prometheus service on Render (= service name).
+    url: http://foodme-prometheus:10000
     isDefault: true
     editable: false
 
   - name: Loki
     type: loki
     access: proxy
-    url: http://loki:10000
+    uid: loki
+    url: http://foodme-loki:10000
     editable: false

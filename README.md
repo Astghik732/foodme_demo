@@ -1,212 +1,123 @@
-# FoodMe
+# FoodMe — deploy scaffolding
 
-> ## ⚠️ Training target — deliberately defective and deliberately insecure
->
-> FoodMe is a **teaching artifact**, built as the System Under Test for a
-> course on agentic QA. It contains intentional functional bugs and
-> intentional security vulnerabilities, planted on purpose so that students
-> have real things to find. Seed data also contains sample text designed to
-> look like untrusted user content an AI agent might be pointed at.
->
-> **Do not deploy FoodMe anywhere public. Do not expose it to the internet.
-> Do not reuse any of its code, dependencies, or configuration in a real
-> product.** Run it only on `localhost` or inside an isolated lab network.
+> ⚠️ **Training target — deliberately defective and deliberately insecure.**
+> Run it only in an isolated lab. Do not expose it to the internet or reuse its
+> code, dependencies, or configuration in a real product.
 
-## What this is
+Everything below is the click-by-click scaffolding to stand FoodMe up in the
+cloud, in the order you should run it:
 
-FoodMe is a minimal food-ordering web app: a storefront where a customer
-browses chefs, opens a chef's page, adds dishes to a cart, and checks out with
-cash on delivery. It ships with a small back-office admin app for managing
-chefs, dishes, and orders.
+1. [Third party — GlitchTip error tracking](#1-third-party--glitchtip-error-tracking)
+2. [Render — app services](#2-render--app-services)
+3. [Render — monitoring services](#3-render--monitoring-services)
 
-It supports exactly one user flow, end to end:
+Do them in that order: GlitchTip DSNs are consumed by the app blueprint, and the
+app must be live before the monitoring stack can reach it over private DNS.
 
-**list of chefs → chef page + menu → cart → cash-only checkout**
+---
 
-Everything else — accounts, card payments, delivery maps, promotions — is out
-of scope by design. The point of FoodMe is not feature completeness; it's a
-small, realistic surface with real bugs and real security gaps for a QA
-course to work against.
+## 1. Third party — GlitchTip error tracking
 
-## Architecture
+Register a free account at [glitchtip.com](https://glitchtip.com/) and create
+**three** projects — one each for the backend, storefront, and admin. The app
+blueprint (step 2) prompts for three `sync: false` env vars; paste each
+project's **DSN** to match:
 
-| Component | Tech | Port |
+| Env var | Project | Read at |
 |---|---|---|
-| Backend API | Spring Boot 3 / Java 17 | `8081` |
-| Storefront (web) | React 18 / Vite | `3000` |
-| Back office (admin) | React 18 / react-admin | `3001` |
-| Database | PostgreSQL 16 | `5432` |
-| Grafana | dashboards | `3002` |
-| Prometheus | metrics | `9090` |
-| Loki | logs | `3100` |
-| GlitchTip | error tracking (Sentry-compatible) | `8000` |
-| Jenkins | self-hosted CI | `8080` |
+| `SENTRY_DSN` | backend | runtime |
+| `VITE_SENTRY_DSN_WEB` | storefront | build time |
+| `VITE_SENTRY_DSN_ADMIN` | admin | build time |
 
-The backend exposes a public, unauthenticated `/api/**` for the storefront and
-a JWT-protected `/admin/**` for the back office. The frontend talks to
-`/api/**` only; the admin app talks to `/admin/**` only. See
-[`docs/api-contract.md`](docs/api-contract.md) for the frozen request/response
-shapes.
+Leave any blank to disable tracking for that app. The two `VITE_` values are
+baked into the frontend bundles during the Docker build, so changing them later
+needs a fresh deploy, not just a restart. Once live, all three apps also emit a
+periodic demo "background task" that fails ~1 run in 10, so GlitchTip shows a
+realistic trickle of events without anyone clicking around.
 
-## Cloud lab deploy (your own free copy)
+---
 
-Each student can deploy a personal instance in ~10 minutes (browser only, no
-credit card) from a single Render blueprint: **fork → pick your handle → New
-Blueprint → Apply**. See the click-by-click guide in
-[`docs/deployment.md`](docs/deployment.md).
+## 2. Render — app services
 
-> **After forking, edit `render.yaml` first.** Everything runs as **one**
-> Render service that serves the API and both frontends on a single origin, so
-> there is no cross-service URL to keep in sync. You only need to give the
-> service a name nobody else has taken — replace the handle `armanayvazyan`
-> with your own (e.g. your GitHub username):
->
-> ```yaml
-> name: foodme-<your-handle>
-> ```
->
-> Because the storefront, admin, and API share one host, the exact name (and
-> any random suffix Render adds on a collision) no longer affects whether the
-> app works. After deploy you'll find the storefront at `/`, the admin back
-> office at `/backoffice`, and the API under `/api` and `/admin`.
+Blueprint: [`render.yaml`](render.yaml). Everything runs as **one** Render web
+service that serves the API and both frontends on a single origin, plus a free
+Postgres database.
 
-> **Before deploying, set up error tracking.** Register a free account at
-> [glitchtip.com](https://glitchtip.com/) and create **three** projects — one
-> each for the backend, storefront, and admin. During the Blueprint step Render
-> prompts for three `sync: false` env vars; paste each project's **DSN** to match:
->
-> | Env var | Project | Read at |
-> |---|---|---|
-> | `SENTRY_DSN` | backend | runtime |
-> | `VITE_SENTRY_DSN_WEB` | storefront | build time |
-> | `VITE_SENTRY_DSN_ADMIN` | admin | build time |
->
-> Leave any blank to disable tracking for that app. The two `VITE_` values are
-> baked into the frontend bundles during the Docker build, so changing them
-> later needs a fresh deploy, not just a restart. Once live, all three apps also
-> emit a periodic demo "background task" that fails ~1 run in 10, so GlitchTip
-> shows a realistic trickle of events without anyone clicking around.
+**Fork → edit `render.yaml` → New Blueprint → Apply.**
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+1. **After forking, edit `render.yaml` first.** Give the service a name nobody
+   else has taken — replace the handle `armanayvazyan` with your own (e.g. your
+   GitHub username):
 
-Stack: **Render only** — one service (API + both frontends) plus a Postgres
-database, all from one `render.yaml`. Lab-only — tear down after the course.
-
-## Quickstart
-
-Requires Docker and Docker Compose.
-
-```bash
-git clone <this-repo>
-cd foodme_demo
-cp .env.example .env
-docker compose -f infra/docker-compose.yml --profile core up -d
-```
-
-This starts Postgres, the backend, the storefront, and the admin app. Give the
-backend a few seconds to run its migrations, then:
-
-- Storefront: <http://localhost:3000>
-- Admin back office: <http://localhost:3001>
-- API: <http://localhost:8081> (`/actuator/health`, `/swagger-ui.html`)
-
-To also bring up observability (Grafana/Prometheus/Loki/GlitchTip) or the
-self-hosted Jenkins, add the matching profile:
-
-```bash
-docker compose -f infra/docker-compose.yml --profile core --profile observability --profile ci up -d
-```
-
-To stop everything:
-
-```bash
-docker compose -f infra/docker-compose.yml --profile core --profile observability --profile ci down
-```
-
-## Seeded credentials
-
-The database seeds one admin account for the back office:
-
-| Field | Value |
-|---|---|
-| URL | <http://localhost:3001> |
-| Username | `admin` |
-| Password | `admin123` |
-
-The storefront has no accounts — checkout is guest-only.
-
-## Repo layout
-
-```
-foodme_demo/
-  apps/
-    backend/    Spring Boot API — chefs, dishes, orders, admin
-    web/        React storefront
-    admin/      React back office (react-admin)
-  docs/
-    api-contract.md       frozen request/response shapes
-    requirements/         product specs for the storefront flow
-    runbook.md             operator guide (instructor-facing)
-  qa/
-    tickets/    sample Jira tickets (Markdown + a Jira-importable CSV)
-    xray/       starter Xray test repository
-    mcp/        MCP server templates for Jira, Xray, Grafana, GitHub
-  infra/        docker-compose.yml and per-service config
-  .github/      CI workflows
-```
-
-## Running the test suites
-
-```bash
-# Backend (JUnit)
-cd apps/backend && ./gradlew test
-
-# Storefront and admin (lint + build)
-cd apps/web && npm ci && npm run lint && npm run build
-cd apps/admin && npm ci && npm run lint && npm run build
-
-# End-to-end (Playwright, needs the stack running)
-cd apps/web && npm run test:e2e
-```
-
-## Putting it on GitHub
-
-These commands are for a human to run, not an agent — they create a real
-remote and push real content.
-
-1. Create the repository (adjust visibility and org/user as needed):
-
-   ```bash
-   gh repo create <org-or-user>/foodme-demo --public --source=. --remote=origin
+   ```yaml
+   name: foodme-<your-handle>
    ```
 
-2. Push the current branch:
+   Because the storefront, admin, and API share one host, the exact name (and
+   any random suffix Render adds on a collision) does not affect whether the app
+   works.
 
-   ```bash
-   git push -u origin main
-   ```
+2. **New → Blueprint → point at `render.yaml` → Apply.** When prompted, paste
+   the three GlitchTip DSNs from step 1 (`SENTRY_DSN`, `VITE_SENTRY_DSN_WEB`,
+   `VITE_SENTRY_DSN_ADMIN`).
 
-3. Add the `ANTHROPIC_API_KEY` secret used by the Claude PR-review GitHub
-   Action:
+3. Leave `LOKI_PUSH_URL` blank for now — you set it in step 3 once Loki exists.
 
-   ```bash
-   gh secret set ANTHROPIC_API_KEY --repo <org-or-user>/foodme-demo
-   # paste the key when prompted, or:
-   gh secret set ANTHROPIC_API_KEY --repo <org-or-user>/foodme-demo --body "sk-ant-..."
-   ```
+After deploy you'll find the storefront at `/`, the admin back office at
+`/backoffice`, and the API under `/api` and `/admin`.
 
-4. Confirm the workflow is present and enabled:
+> Full click-by-click walkthrough: [`docs/deployment.md`](docs/deployment.md).
 
-   ```bash
-   gh workflow list --repo <org-or-user>/foodme-demo
-   ```
+---
 
-5. Have students fork it:
+## 3. Render — monitoring services
 
-   ```bash
-   gh repo fork <org-or-user>/foodme-demo --clone
-   ```
+Blueprint: [`render-monitoring.yaml`](render-monitoring.yaml) — a **separate**
+blueprint (Prometheus + Loki + Grafana + Grafana MCP). Deploy it **after** the
+app, into the **same Render project + region** so private DNS (service-name
+resolution) works. All services are free/ephemeral and never auto-redeploy on
+app code pushes.
 
-   Each student works in their own fork and opens pull requests back to it (or
-   to their own fork's `main`, per your course setup) so the PR-review
-   workflow has something to run against.
+> On Render's **free** plan there are no private services, so every monitoring
+> service is a `web` service. Prometheus/Loki are still reached internally via
+> private DNS (`foodme-prometheus:PORT` / `foodme-loki:PORT`) but also get a
+> public URL. For truly private Prometheus/Loki, switch those two to
+> `type: pserv` on a paid plan. Internal URLs are wired by **service name** — if
+> you rename a service, update `datasources.yml`, the backend `LOKI_PUSH_URL`,
+> and `GRAFANA_URL`.
+
+1. **New → Blueprint → `render-monitoring.yaml`.** Set
+   `GF_SECURITY_ADMIN_PASSWORD` when prompted. Wait for `foodme-prometheus`,
+   `foodme-loki`, and `foodme-grafana` to go live.
+
+2. **Confirm internal ports.** For each service (Render → service → Connect)
+   check its internal port. If it is not `10000`, update
+   `prometheus/prometheus.yml`,
+   `grafana/provisioning/datasources/datasources.yml`, and the
+   `foodme-grafana-mcp` `GRAFANA_URL`, then redeploy.
+
+3. **Ship logs.** Set the app's `LOKI_PUSH_URL` (step 2 service) to
+   `http://foodme-loki:<port>/loki/api/v1/push` and let the app redeploy.
+
+4. **Grafana MCP tokens** (on the `foodme-grafana-mcp` service), then redeploy it:
+   - `GRAFANA_SERVICE_ACCOUNT_TOKEN` — Grafana → Administration → Service
+     accounts → create SA (Editor) → generate token.
+   - `MCP_GRAFANA_SERVER_TOKEN` — your own secret: `openssl rand -hex 32`.
+
+Grafana login: `admin` / `GF_SECURITY_ADMIN_PASSWORD`.
+
+### Verify end to end
+
+- **Prometheus → backend**: Grafana → Explore → Prometheus →
+  `up{app="foodme-backend"}` = `1`.
+- **Backend → Loki**: Grafana → Explore → Loki → `{app="foodme-backend"}` →
+  recent lines.
+- **Datasources**: Grafana → Connections → Data sources → Prometheus + Loki both
+  test green.
+- **Grafana MCP**: connect to
+  `https://foodme-grafana-mcp-<hash>.onrender.com/mcp` (streamable-http) with
+  header `Authorization: Bearer <MCP_GRAFANA_SERVER_TOKEN>`, then list
+  datasources, run a PromQL query (`up`), and run a LogQL query
+  (`{app="foodme-backend"}`).
+
+More detail: [`infra/monitoring/README.md`](infra/monitoring/README.md).

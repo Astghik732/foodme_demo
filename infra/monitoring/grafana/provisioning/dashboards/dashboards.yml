@@ -1,0 +1,15 @@
+apiVersion: 1
+
+# Auto-load every dashboard JSON under ./json into the "FoodMe" folder so the
+# instance comes up populated with nothing added by hand.
+providers:
+  - name: FoodMe
+    orgId: 1
+    folder: FoodMe
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/json
+      foldersFromFilesStructure: false

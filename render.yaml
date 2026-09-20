@@ -27,6 +27,6 @@ services:
       - key: VITE_SENTRY_DSN_ADMIN
         sync: false
       # Set to Loki's private push URL AFTER render-monitoring.yaml is deployed:
-      # http://loki:10000/loki/api/v1/push  (empty = log shipping disabled)
+      # http://foodme-loki:10000/loki/api/v1/push  (empty = log shipping disabled)
       - key: LOKI_PUSH_URL
         sync: false

@@ -2,31 +2,42 @@
 # Apply this into the SAME Render project + region as the app so private
 # networking (service-name DNS) resolves. All services are free/ephemeral and
 # never auto-redeploy on app code pushes (autoDeploy: false).
+#
+# NOTE: Render's FREE plan does not offer private services (pserv), so every
+# service here is a "web" service. Prometheus/Loki are still reached internally
+# via private DNS (foodme-prometheus:PORT / foodme-loki:PORT), but on free they
+# also expose a public URL. For truly private Prometheus/Loki, switch those two
+# to `type: pserv` on a paid plan (plan: starter).
+#
+# Internal URLs are wired by SERVICE NAME. If you rename a service, update every
+# reference: datasources.yml, the backend LOKI_PUSH_URL, and GRAFANA_URL below.
 
 services:
-  # --- Prometheus (private) -------------------------------------------------
-  - type: pserv
-    name: prometheus
+  # --- Prometheus -----------------------------------------------------------
+  - type: web
+    name: foodme-prometheus
     runtime: docker
     plan: free
     region: oregon
     autoDeploy: false
     dockerfilePath: ./infra/monitoring/prometheus/Dockerfile
     dockerContext: ./infra/monitoring/prometheus
+    healthCheckPath: /-/healthy
 
-  # --- Loki (private) -------------------------------------------------------
-  - type: pserv
-    name: loki
+  # --- Loki -----------------------------------------------------------------
+  - type: web
+    name: foodme-loki
     runtime: docker
     plan: free
     region: oregon
     autoDeploy: false
     dockerfilePath: ./infra/monitoring/loki/Dockerfile
     dockerContext: ./infra/monitoring/loki
+    healthCheckPath: /ready
 
-  # --- Grafana (public) -----------------------------------------------------
+  # --- Grafana --------------------------------------------------------------
   - type: web
-    name: grafana
+    name: foodme-grafana
     runtime: docker
     plan: free
     region: oregon
@@ -42,9 +53,9 @@ services:
       - key: GF_USERS_ALLOW_SIGN_UP
         value: "false"
 
-  # --- Grafana MCP (public; serves metrics + logs + dashboards) -------------
+  # --- Grafana MCP (serves metrics + logs + dashboards) ---------------------
   - type: web
-    name: grafana-mcp
+    name: foodme-grafana-mcp
     runtime: image
     plan: free
     region: oregon
@@ -57,7 +68,7 @@ services:
     healthCheckPath: /healthz
     envVars:
       - key: GRAFANA_URL
-        value: http://grafana:10000
+        value: http://foodme-grafana:10000
       # Service-account token the MCP uses to call Grafana (queries Prometheus + Loki + dashboards)
       - key: GRAFANA_SERVICE_ACCOUNT_TOKEN
         sync: false
