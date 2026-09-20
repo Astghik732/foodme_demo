@@ -44,8 +44,20 @@ http {
 
         # Grafana last: it owns the root, including /api/health (Render's
         # health check) and the websocket-based live features.
+        #
+        # The Host/X-Forwarded headers are REPEATED here on purpose. nginx does
+        # not merge proxy_set_header across levels: declaring any one of them in
+        # a location discards every directive inherited from the http block. The
+        # websocket headers below would therefore silently drop Host, nginx
+        # would fall back to its default of $proxy_host (127.0.0.1:3000), and
+        # Grafana's CSRF check — which compares the Origin header against the
+        # Host it actually received — would reject every login with
+        # "origin not allowed". Keep these in sync with the http block.
         location / {
             proxy_pass http://127.0.0.1:3000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "upgrade";
         }
