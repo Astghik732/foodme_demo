@@ -46,12 +46,11 @@ There is **nothing to set** for the MCP to work:
   We deliberately do **not** use a service-account token: it would live in
   Grafana's SQLite DB, which the free tier wipes on every restart, so it would
   go stale after the next deploy.
-- **Caller auth on the MCP endpoint** — currently **none**. The `/mcp` endpoint
-  is served **open** to anyone with the URL, with full admin-level access to your
-  Grafana. That is acceptable for a throwaway workshop but is not a secret URL.
-  `MCP_GRAFANA_SERVER_TOKEN` exists as a placeholder env var but is **not yet
-  wired** to any auth check — setting it does nothing today. If you need to lock
-  the endpoint down, add a bearer check in `nginx.conf.template` for `/mcp`.
+- **Caller auth on the MCP endpoint** — **none**. The `/mcp` endpoint is served
+  **open** to anyone with the URL, with full admin-level access to your Grafana.
+  That is acceptable for a throwaway workshop but is not a secret URL. If you
+  need to lock the endpoint down, add a bearer check for `/mcp` in
+  `nginx.conf.template`.
 
 ## Connecting Claude to the Grafana MCP
 

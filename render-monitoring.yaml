@@ -59,5 +59,3 @@ services:
       # entrypoint — nothing to set here. We deliberately do NOT use a
       # GRAFANA_SERVICE_ACCOUNT_TOKEN: it would live in Grafana's
       # wiped-on-redeploy SQLite DB and go stale after every deploy.
-      - key: MCP_GRAFANA_SERVER_TOKEN
-        sync: false
