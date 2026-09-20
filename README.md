@@ -19,21 +19,7 @@ app must be live before the monitoring stack can reach it over private DNS.
 ## 1. Third party — GlitchTip error tracking
 
 Register a free account at [glitchtip.com](https://glitchtip.com/) and create
-**three** projects — one each for the backend, storefront, and admin. The app
-blueprint (step 2) prompts for three `sync: false` env vars; paste each
-project's **DSN** to match:
-
-| Env var | Project | Read at |
-|---|---|---|
-| `SENTRY_DSN` | backend | runtime |
-| `VITE_SENTRY_DSN_WEB` | storefront | build time |
-| `VITE_SENTRY_DSN_ADMIN` | admin | build time |
-
-Leave any blank to disable tracking for that app. The two `VITE_` values are
-baked into the frontend bundles during the Docker build, so changing them later
-needs a fresh deploy, not just a restart. Once live, all three apps also emit a
-periodic demo "background task" that fails ~1 run in 10, so GlitchTip shows a
-realistic trickle of events without anyone clicking around.
+**three** projects — one each for the backend, storefront, and admin.
 
 ---
 
