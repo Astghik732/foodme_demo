@@ -37,7 +37,7 @@ services:
 
   # --- Grafana --------------------------------------------------------------
   - type: web
-    name: foodme-grafana
+    name: foodme-armanayvazyan-grafana
     runtime: docker
     plan: free
     region: oregon
@@ -67,8 +67,9 @@ services:
     dockerCommand: /bin/sh -c 'exec /app/mcp-grafana -transport streamable-http -address 0.0.0.0:$PORT -allowed-hosts "*"'
     healthCheckPath: /healthz
     envVars:
+      # MUST match the foodme-armanayvazyan-grafana service `name` above (rename together).
       - key: GRAFANA_URL
-        value: http://foodme-grafana:10000
+        value: http://foodme-armanayvazyan-grafana:10000
       # Service-account token the MCP uses to call Grafana (queries Prometheus + Loki + dashboards)
       - key: GRAFANA_SERVICE_ACCOUNT_TOKEN
         sync: false

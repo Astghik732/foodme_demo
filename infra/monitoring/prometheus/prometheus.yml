@@ -8,6 +8,7 @@ scrape_configs:
     scheme: http
     static_configs:
       # Backend private hostname = its Render service name.
+      # MUST match the backend service `name` in render.yaml (rename together).
       # Port = the port the backend binds on Render (default 10000).
       - targets: ["foodme-armanayvazyan:10000"]
         labels:

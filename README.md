@@ -1,19 +1,5 @@
 # FoodMe — deploy scaffolding
 
-> ⚠️ **Training target — deliberately defective and deliberately insecure.**
-> Run it only in an isolated lab. Do not expose it to the internet or reuse its
-> code, dependencies, or configuration in a real product.
-
-Everything below is the click-by-click scaffolding to stand FoodMe up in the
-cloud, in the order you should run it:
-
-1. [Third party — GlitchTip error tracking](#1-third-party--glitchtip-error-tracking)
-2. [Render — app services](#2-render--app-services)
-3. [Render — monitoring services](#3-render--monitoring-services)
-
-Do them in that order: GlitchTip DSNs are consumed by the app blueprint, and the
-app must be live before the monitoring stack can reach it over private DNS.
-
 ---
 
 ## 1. Third party — GlitchTip error tracking
@@ -25,52 +11,33 @@ Register a free account at [glitchtip.com](https://glitchtip.com/) and create
 
 ## 2. Render — app services
 
-Blueprint: [`render.yaml`](render.yaml). Everything runs as **one** Render web
-service that serves the API and both frontends on a single origin, plus a free
-Postgres database.
+0. **Initial Step**
 
-**Fork → edit `render.yaml` → New Blueprint → Apply.**
+- Fork repository
+- Replace `armanayvazyan` with your GitHub username **everywhere** in the repo (one command):
 
-1. **After forking, edit `render.yaml` first.** Give the service a name nobody
-   else has taken — replace the handle `armanayvazyan` with your own (e.g. your
-   GitHub username):
+  ```bash
+  grep -rl armanayvazyan . --exclude-dir=.git | xargs sed -i '' 's/armanayvazyan/<your_github_username>/g'
+  ```
 
-   ```yaml
-   name: foodme-<your-handle>
-   ```
+  Verify none are left: `grep -rn armanayvazyan . --exclude-dir=.git` (should print nothing).
+- Push changes
 
-   Because the storefront, admin, and API share one host, the exact name (and
-   any random suffix Render adds on a collision) does not affect whether the app
-   works.
+1. Click the button and deploy render.yaml 
 
-2. **New → Blueprint → point at `render.yaml` → Apply.** When prompted, paste
-   the three GlitchTip DSNs from step 1 (`SENTRY_DSN`, `VITE_SENTRY_DSN_WEB`,
-   `VITE_SENTRY_DSN_ADMIN`).
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
-3. Leave `LOKI_PUSH_URL` blank for now — you set it in step 3 once Loki exists.
+- During deployment, paste the three GlitchTip DSNs from step 1 (`SENTRY_DSN`, `VITE_SENTRY_DSN_WEB`, `VITE_SENTRY_DSN_ADMIN`).
 
-After deploy you'll find the storefront at `/`, the admin back office at
-`/backoffice`, and the API under `/api` and `/admin`.
+2. After deploy you'll find the storefront at `/`, the admin back office at
+   `/backoffice`, and the API under `/api` and `/admin`.
 
-> Full click-by-click walkthrough: [`docs/deployment.md`](docs/deployment.md).
+Note: 
+> Leave `LOKI_PUSH_URL` blank for now — you set it in step 3 once Loki exists.
 
 ---
 
 ## 3. Render — monitoring services
-
-Blueprint: [`render-monitoring.yaml`](render-monitoring.yaml) — a **separate**
-blueprint (Prometheus + Loki + Grafana + Grafana MCP). Deploy it **after** the
-app, into the **same Render project + region** so private DNS (service-name
-resolution) works. All services are free/ephemeral and never auto-redeploy on
-app code pushes.
-
-> On Render's **free** plan there are no private services, so every monitoring
-> service is a `web` service. Prometheus/Loki are still reached internally via
-> private DNS (`foodme-prometheus:PORT` / `foodme-loki:PORT`) but also get a
-> public URL. For truly private Prometheus/Loki, switch those two to
-> `type: pserv` on a paid plan. Internal URLs are wired by **service name** — if
-> you rename a service, update `datasources.yml`, the backend `LOKI_PUSH_URL`,
-> and `GRAFANA_URL`.
 
 1. **New → Blueprint → `render-monitoring.yaml`.** Set
    `GF_SECURITY_ADMIN_PASSWORD` when prompted. Wait for `foodme-prometheus`,
@@ -91,19 +58,3 @@ app code pushes.
    - `MCP_GRAFANA_SERVER_TOKEN` — your own secret: `openssl rand -hex 32`.
 
 Grafana login: `admin` / `GF_SECURITY_ADMIN_PASSWORD`.
-
-### Verify end to end
-
-- **Prometheus → backend**: Grafana → Explore → Prometheus →
-  `up{app="foodme-backend"}` = `1`.
-- **Backend → Loki**: Grafana → Explore → Loki → `{app="foodme-backend"}` →
-  recent lines.
-- **Datasources**: Grafana → Connections → Data sources → Prometheus + Loki both
-  test green.
-- **Grafana MCP**: connect to
-  `https://foodme-grafana-mcp-<hash>.onrender.com/mcp` (streamable-http) with
-  header `Authorization: Bearer <MCP_GRAFANA_SERVER_TOKEN>`, then list
-  datasources, run a PromQL query (`up`), and run a LogQL query
-  (`{app="foodme-backend"}`).
-
-More detail: [`infra/monitoring/README.md`](infra/monitoring/README.md).
