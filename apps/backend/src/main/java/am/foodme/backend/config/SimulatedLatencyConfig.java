@@ -17,24 +17,26 @@ import java.util.concurrent.ThreadLocalRandom;
  * the QA course.
  *
  * <p>The delay is applied to {@code /api/**} and {@code /admin/**} only — never
- * to the health check ({@code /actuator/**}) or the bundled SPA/static assets,
- * so Render's health probe and page loads stay fast. The range is configurable
- * via {@code foodme.latency.min-ms} / {@code foodme.latency.max-ms}; the test
+ * to the health check ({@code /actuator/**}), the bundled SPA/static assets, or
+ * DB-backed images ({@code /api/images/**}), so Render's health probe, page
+ * loads, and image fetches stay fast. The range is configurable via
+ * {@code foodme.latency.min-ms} / {@code foodme.latency.max-ms}; the test
  * profile sets both to 0 so the suite is fast and deterministic.
  */
 @Configuration
 public class SimulatedLatencyConfig implements WebMvcConfigurer {
 
-    @Value("${foodme.latency.min-ms:300}")
+    @Value("${foodme.latency.min-ms:200}")
     private long minMs;
 
-    @Value("${foodme.latency.max-ms:2000}")
+    @Value("${foodme.latency.max-ms:1500}")
     private long maxMs;
 
     @Override
     public void addInterceptors(@NonNull InterceptorRegistry registry) {
         registry.addInterceptor(new LatencyInterceptor())
-                .addPathPatterns("/api/**", "/admin/**");
+                .addPathPatterns("/api/**", "/admin/**")
+                .excludePathPatterns("/api/images/**");
     }
 
     private class LatencyInterceptor implements HandlerInterceptor {
