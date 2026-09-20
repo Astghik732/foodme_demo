@@ -35,6 +35,8 @@ RUN apk add --no-cache nginx supervisor
 
 # Static Go binaries lifted from the official images.
 COPY --from=prometheus /bin/prometheus      /usr/local/bin/prometheus
+# promtool lets the entrypoint validate the generated config before starting.
+COPY --from=prometheus /bin/promtool        /usr/local/bin/promtool
 COPY --from=loki       /usr/bin/loki        /usr/local/bin/loki
 COPY --from=mcp        /app/mcp-grafana     /usr/local/bin/mcp-grafana
 

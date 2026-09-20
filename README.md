@@ -59,8 +59,10 @@ reached on one URL:
    to go live, then copy its public URL.
 
 2. **Point Prometheus at your backend.** On `foodme-monitoring` → Environment,
-   set `BACKEND_HOST` to your backend's host only — no scheme, no port, e.g.
-   `foodme-<user>-xxxx.onrender.com` — then redeploy it.
+   set `BACKEND_HOST` to your backend's host, e.g.
+   `foodme-<user>-xxxx.onrender.com`, then redeploy it. Prometheus needs a bare
+   hostname; if you paste the full `https://…/` URL from the dashboard the
+   entrypoint strips the scheme, path and port for you.
 
 3. **Ship logs.** On the **app** service set `LOKI_PUSH_URL` to
    `https://foodme-monitoring-xxxx.onrender.com/loki/api/v1/push` and let it

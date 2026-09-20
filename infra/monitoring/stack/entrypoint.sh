@@ -6,10 +6,37 @@ set -e
 : "${PORT:=10000}"
 
 # Prometheus scrapes the backend over its PUBLIC https URL (free services can't
-# be reached privately). Empty BACKEND_HOST is fine on a first deploy: the
-# target is simply unreachable and Prometheus still starts and serves.
-sed "s|__BACKEND_HOST__|${BACKEND_HOST}|g" \
-    /etc/foodme/prometheus.tmpl.yml > /tmp/prometheus.yml
+# be reached privately). Prometheus wants a BARE hostname here: anything else —
+# a pasted "https://host/", a ":443" already on the end — is rejected as "not a
+# valid hostname", and since that is a config parse error Prometheus exits
+# immediately, supervisord gives up after three tries, and the whole /prom/
+# route serves 502 forever. Pasting the full URL from the Render dashboard is
+# the obvious mistake to make, so normalise instead of trusting the value:
+# drop any scheme, any /path, and any :port.
+BACKEND_HOST=$(printf '%s' "${BACKEND_HOST}" | sed \
+    -e 's#^[A-Za-z][A-Za-z0-9+.-]*://##' \
+    -e 's#/.*$##' \
+    -e 's#:[0-9]*$##' \
+    -e 's#[[:space:]]##g')
+
+if [ -z "${BACKEND_HOST}" ]; then
+    # First deploy, before the student has wired the backend. Start with an
+    # empty target list rather than a bogus ":443" one so Prometheus comes up
+    # clean and /prom/ is reachable.
+    echo "entrypoint: BACKEND_HOST is unset - starting with no scrape target"
+    sed 's|^\( *\)- targets: \[.*\]|\1- targets: []|' \
+        /etc/foodme/prometheus.tmpl.yml > /tmp/prometheus.yml
+else
+    echo "entrypoint: scraping backend at ${BACKEND_HOST}:443"
+    sed "s|__BACKEND_HOST__|${BACKEND_HOST}|g" \
+        /etc/foodme/prometheus.tmpl.yml > /tmp/prometheus.yml
+fi
+
+# Fail loudly here rather than crash-looping later.
+/usr/local/bin/promtool check config /tmp/prometheus.yml || {
+    echo "entrypoint: generated prometheus.yml is invalid (BACKEND_HOST=${BACKEND_HOST})" >&2
+    exit 1
+}
 
 sed "s|__PORT__|${PORT}|g" \
     /etc/foodme/nginx.conf.template > /etc/nginx/nginx.conf

@@ -24,8 +24,12 @@ behind nginx, talking to each other over loopback:
 1. Deploy the app: `render.yaml`.
 2. Deploy this stack: Render → New → Blueprint → `render-monitoring.yaml`.
 3. On `foodme-monitoring` → Environment, set
-   `BACKEND_HOST` = your backend's public host, **no scheme, no port**
+   `BACKEND_HOST` = your backend's public host
    (e.g. `foodme-<user>-xxxx.onrender.com`), then redeploy it.
+   Prometheus requires a bare hostname, but the entrypoint normalises the
+   value first — a pasted `https://host/` or a trailing `:443` is fine.
+   If the config still came out invalid the container exits at startup with
+   `generated prometheus.yml is invalid`, rather than crash-looping.
 4. On the **backend** service → Environment, set
    `LOKI_PUSH_URL` = `https://foodme-monitoring-xxxx.onrender.com/loki/api/v1/push`,
    and let it redeploy.
