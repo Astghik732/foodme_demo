@@ -1,6 +1,11 @@
 # FoodMe monitoring stack — SEPARATE blueprint, deploy AFTER the main app,
-# into the same region. Free/ephemeral, and it never auto-redeploys on app code
-# pushes (autoDeploy: false).
+# into the same region.
+#
+# autoDeploy is OFF here on purpose, unlike the app in render.yaml. The free
+# plan has no persistent disk, so every redeploy WIPES all stored metrics and
+# logs. Rebuilding this service on app code pushes — which never change it —
+# would throw away your observability data each time you commit. Flip it to
+# true only if you are actually editing infra/monitoring/.
 #
 # ONE service runs Prometheus + Loki + Grafana + the Grafana MCP behind nginx.
 # They talk to each other over loopback inside the container, so none of the

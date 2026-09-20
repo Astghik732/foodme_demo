@@ -9,6 +9,10 @@ services:
     name: foodme-armanayvazyan
     runtime: docker
     plan: free
+    # Rebuild and redeploy on every push to the tracked branch. This is also
+    # Render's default, but it is stated explicitly here because the monitoring
+    # blueprint deliberately sets the opposite (see render-monitoring.yaml).
+    autoDeploy: true
     dockerfilePath: ./apps/backend/Dockerfile
     dockerContext: .
     healthCheckPath: /actuator/health
