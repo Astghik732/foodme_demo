@@ -161,7 +161,10 @@ test("admin can login and list orders after a storefront checkout", async ({
     : JSON.stringify(body).includes(order.number);
   expect(found).toBeTruthy();
 
-  await page.goto("http://localhost:3001/#/login");
+  // The backend serves the built admin SPA at /backoffice — same origin as the
+  // API, no separate admin dev server needed. Hash route: the admin app uses
+  // react-admin's default hash router.
+  await page.goto(`${API}/backoffice/#/login`);
   await expect(
     page.getByLabel(/username/i).or(page.locator('input[name="username"]')),
   ).toBeVisible({ timeout: 15000 });

@@ -179,9 +179,11 @@ export default function Tracking() {
             <p className="text-base font-bold text-zinc-900">Items</p>
           </div>
           <div className="divide-y divide-zinc-100">
-            {data.orderDishList.map((dish) => (
+            {/* The tracking DTO's dish rows carry no id; the list is static for
+                a given order, so a name+index key is stable. */}
+            {data.orderDishList.map((dish, index) => (
               <div
-                key={dish.id}
+                key={`${dish.nameEn}-${index}`}
                 className="flex items-center justify-between gap-4 px-5 py-3.5 text-sm"
               >
                 <span className="min-w-0 break-words text-zinc-800">

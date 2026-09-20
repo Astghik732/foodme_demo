@@ -78,7 +78,11 @@ test.describe("Admin resources", () => {
     await page.getByRole("button", { name: "Refresh" }).click();
     await page.getByText(order.number).click();
     await expect(page).toHaveURL(/#\/orders\/\d+\/show/);
-    await expect(page.getByText(`Order ${order.number}`)).toBeVisible();
+    // Both the app-bar title and the page heading render "Order FM-…"; target
+    // the h5 page heading to keep the locator strict-mode safe.
+    await expect(
+      page.getByRole("heading", { name: `Order ${order.number}`, level: 5 }),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "Mark as ACCEPTED" }).click();
     await expect(page.getByText("Order status updated")).toBeVisible({ timeout: 10000 });

@@ -23,8 +23,12 @@ import DishEdit from './pages/dishes/DishEdit.jsx';
 function App() {
     return (
         <SnackbarProvider maxSnack={3}>
+            {/* No basename: react-admin only honours it with an external
+                BrowserRouter; with the default hash router the prop makes every
+                route miss and the app renders a blank page. Hash routing
+                (/backoffice/#/login) also keeps the e2e specs' /#/... URLs valid
+                and needs no server-side route handling. */}
             <Admin
-                basename={import.meta.env.BASE_URL.replace(/\/$/, '')}
                 title="FoodMe Admin"
                 dataProvider={dataProvider}
                 authProvider={authProvider}

@@ -15,6 +15,9 @@
     <springProfile name="!local">
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <!-- Context properties would leak springProperty values (e.g.
+                     lokiPushUrl) into every log line; keep the JSON clean. -->
+                <includeContext>false</includeContext>
                 <includeMdcKeyName>traceId</includeMdcKeyName>
                 <includeMdcKeyName>spanId</includeMdcKeyName>
                 <customFields>{"app":"foodme-backend"}</customFields>
