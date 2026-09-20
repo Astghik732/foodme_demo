@@ -1,92 +1,132 @@
-# FoodMe — deploy scaffolding
+# FoodMe — deploy it yourself, step by step
+
+You will put a small food-ordering app on the internet, plus a monitoring
+dashboard for it. Everything uses **free** accounts. No coding needed.
+
+You need about 30–40 minutes. Most of it is waiting for servers to start.
 
 ---
 
-## 1. Third party — GlitchTip error tracking
+## Step 1 — Make your own copy of this project
 
-Register a free account at [glitchtip.com](https://glitchtip.com/) and create
-**three** projects — one each for the backend, storefront, and admin.
+1. Sign up / log in at [github.com](https://github.com).
+2. On this repository page, click **Fork** (top right). Now you have your own copy.
+3. In **your fork**, open the file `render.yaml`, click the **pencil icon** to edit,
+   and change this line:
 
----
+   ```yaml
+   name: foodme-armanayvazyan
+   ```
 
-## 2. Render — app services
+   to your own GitHub username, for example:
 
-0. **Initial Step**
+   ```yaml
+   name: foodme-mariapetrova
+   ```
 
-- Fork repository
-- Replace `armanayvazyan` with your GitHub username **everywhere** in the repo (one command):
-
-  ```bash
-  grep -rl armanayvazyan . --exclude-dir=.git | xargs sed -i '' 's/armanayvazyan/<your_github_username>/g'
-  ```
-
-  Verify none are left: `grep -rn armanayvazyan . --exclude-dir=.git` (should print nothing).
-- Push changes
-
-1. Click the button and deploy render.yaml 
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
-
-- During deployment, paste the three GlitchTip DSNs from step 1 (`SENTRY_DSN`, `VITE_SENTRY_DSN_WEB`, `VITE_SENTRY_DSN_ADMIN`).
-
-2. After deploy you'll find the storefront at `/`, the admin back office at
-   `/backoffice`, and the API under `/api` and `/admin`.
-
-Note: 
-> Leave `LOKI_PUSH_URL` blank for now — you set it in step 3 once monitoring exists.
+4. Click **Commit changes**.
 
 ---
 
-## 3. Render — monitoring service
+## Step 2 — Create error tracking (GlitchTip)
 
-Prometheus, Loki, Grafana and the Grafana MCP all run in **one** service,
-reached on one URL:
+GlitchTip collects the app's errors so you can see them later.
 
-| Path | Component |
-|---|---|
-| `/` | Grafana (`admin` / `admin`) |
-| `/prom/` | Prometheus |
-| `/loki/` | Loki |
-| `/mcp` | Grafana MCP |
+1. Sign up free at [glitchtip.com](https://glitchtip.com/).
+2. Create **three** projects. Name them: `backend`, `web`, `admin`.
+3. Each project gives you a **DSN** — a long address starting with `https://…`.
+   Open each project's settings and copy its DSN somewhere handy. You now have
+   **3 DSNs**.
 
-> **Why one service?** Render's free web services can *send* private-network
-> requests but **cannot receive** them, so private hostnames like
-> `foodme-loki:10000` do **not** work. Keeping the components in one container
-> lets them talk over loopback, which is what reduces the setup below to two
-> variables instead of six public URLs.
+---
 
-1. **New → Blueprint → `render-monitoring.yaml`.** Wait for `foodme-monitoring`
-   to go live, then copy its public URL.
+## Step 3 — Put the app online (Render)
 
-2. **Point Prometheus at your backend.** On `foodme-monitoring` → Environment,
-   set `BACKEND_HOST` to your backend's host, e.g.
-   `foodme-<user>-xxxx.onrender.com`, then redeploy it. Prometheus needs a bare
-   hostname; if you paste the full `https://…/` URL from the dashboard the
-   entrypoint strips the scheme, path and port for you.
+1. Sign up at [render.com](https://render.com) — choose **"Sign up with GitHub"**.
+2. In the Render dashboard click **New +** → **Blueprint**.
+3. Pick **your fork** of this repository. Render finds `render.yaml` by itself.
+4. Render asks you to fill in a few values. Paste your DSNs from Step 2:
 
-3. **Ship logs.** On the **app** service set `LOKI_PUSH_URL` to
-   `https://foodme-monitoring-xxxx.onrender.com/loki/api/v1/push` and let it
-   redeploy.
+   | Field | What to paste |
+   |---|---|
+   | `SENTRY_DSN` | DSN of the `backend` project |
+   | `VITE_SENTRY_DSN_WEB` | DSN of the `web` project |
+   | `VITE_SENTRY_DSN_ADMIN` | DSN of the `admin` project |
+   | `LOKI_PUSH_URL` | **leave empty** (used in Step 4) |
 
-That's both variables. Datasources, dashboards, and the MCP's Grafana
-connection are provisioned automatically.
+5. Click **Apply** / **Deploy** and wait. ⏳ **10–15 minutes is normal** — the
+   free server is small and slow to start. "In progress" for a long time does
+   not mean it is broken.
+6. When it turns **Live**, click the service `foodme-<yourname>` and open its
+   URL (looks like `https://foodme-<yourname>-xxxx.onrender.com`).
+   - The food store is at `/`
+   - The admin panel is at `/backoffice`
 
-4. **Grafana MCP tokens** — *optional for deployment*. The service deploys and
-   passes its health check with none of these set; you only need them to
-   actually query Grafana through the MCP (and to require auth from callers).
-   Set them on `foodme-monitoring`, then redeploy it:
-   - `GRAFANA_SERVICE_ACCOUNT_TOKEN` — Grafana → Administration → Service
-     accounts → create SA (Editor) → generate token.
-   - `MCP_GRAFANA_SERVER_TOKEN` — your own secret: `openssl rand -hex 32`.
-     Until this is set the MCP serves **unauthenticated** to anyone who finds
-     the URL, and logs a SECURITY warning on startup.
+**If the deploy says "failed":** open the **Logs** tab and look for a red
+error. If there is none (it just timed out), click **Manual Deploy →
+Deploy latest commit** — the second try is faster and usually succeeds.
 
-Grafana login: `admin` / `admin` (change it after first login).
+---
 
-**Verify:** Grafana → Explore → Prometheus → `up{app="foodme-backend"}` = `1`;
-Loki → `{app="foodme-backend"}` shows recent lines.
+## Step 4 — Put the monitoring online (Grafana)
 
-**Retention is 2 days** for both metrics and logs. Be aware the free plan has
-no persistent disk, so data is also wiped on every restart/spin-down, and a
-sleeping instance takes ~15-30s to wake — a first query after idle can time out
-and render as "no data". See `infra/monitoring/README.md`.
+This adds one more service with dashboards, metrics and logs.
+
+1. In Render click **New +** → **Blueprint** → your fork again, but this time
+   choose the file **`render-monitoring.yaml`**.
+2. Deploy it and wait until `foodme-monitoring` is **Live**. Copy its URL
+   (looks like `https://foodme-monitoring-xxxx.onrender.com`).
+3. Connect the two services — two settings:
+
+   **A.** On `foodme-monitoring` → **Environment** → set:
+   - `BACKEND_HOST` = your app's address **without** `https://`,
+     for example: `foodme-mariapetrova-xxxx.onrender.com`
+
+   **B.** On your app service (`foodme-<yourname>`) → **Environment** → set:
+   - `LOKI_PUSH_URL` = `https://foodme-monitoring-xxxx.onrender.com/loki/api/v1/push`
+     (your monitoring URL + `/loki/api/v1/push`)
+
+   Saving each one restarts that service automatically. Wait for both to be
+   **Live** again.
+4. Open the monitoring URL. This is **Grafana**. Log in with `admin` / `admin`
+   (it will ask you to set a new password — do it).
+
+---
+
+## Step 5 — Check everything works
+
+1. Open your food store URL and click around (browse dishes, add to cart).
+2. In Grafana, go to **Explore**:
+   - choose **Prometheus**, run the query `up{app="foodme-backend"}` — you
+     should see the value `1`.
+   - choose **Loki**, run the query `{app="foodme-backend"}` — you should see
+     the app's log lines.
+
+Done. 🎉
+
+---
+
+## Good to know (read when something looks wrong)
+
+- **Free servers fall asleep** after ~15 minutes without visitors. The first
+  visit after that takes 1–3 minutes to answer. This is normal.
+- **Monitoring data is wiped** every time the monitoring service restarts or
+  falls asleep (free plan has no storage disk). Old graphs disappearing is
+  normal, not your mistake.
+- **"No data" in Grafana right after waking up** — wait 30 seconds and run the
+  query again.
+- Metrics and logs are kept for a maximum of **2 days**.
+
+## Optional (for the curious): Grafana MCP tokens
+
+Everything above works without this. Only needed if you want AI tools to query
+your Grafana through the built-in MCP endpoint (`/mcp`). On `foodme-monitoring`
+set two more environment variables:
+
+- `GRAFANA_SERVICE_ACCOUNT_TOKEN` — in Grafana: **Administration → Service
+  accounts** → create an account (role: Editor) → **Generate token** → copy it.
+- `MCP_GRAFANA_SERVER_TOKEN` — any long random secret you invent (this becomes
+  the password callers must send). Until it is set, the MCP endpoint is open to
+  anyone who finds the URL.
+
+More technical detail lives in `infra/monitoring/README.md`.
