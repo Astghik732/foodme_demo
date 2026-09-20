@@ -26,7 +26,10 @@ services:
         sync: false
       - key: VITE_SENTRY_DSN_ADMIN
         sync: false
-      # Set to Loki's private push URL AFTER render-monitoring.yaml is deployed:
-      # http://foodme-loki:10000/loki/api/v1/push  (empty = log shipping disabled)
+      # Set AFTER render-monitoring.yaml is deployed, to Loki's PUBLIC push URL:
+      # https://foodme-loki-xxxx.onrender.com/loki/api/v1/push
+      # (empty = log shipping disabled, which is the correct state until Loki exists)
+      # NOT the private http://foodme-loki:10000/... — free web services cannot
+      # RECEIVE private network traffic, so that address never resolves. See README.
       - key: LOKI_PUSH_URL
         sync: false

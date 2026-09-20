@@ -24,10 +24,13 @@ into the **same Render project + region**.
    - `foodme-grafana-mcp` → `GRAFANA_URL` = `https://foodme-<user>-grafana-xxxx.onrender.com`.
 4. Ship logs: set the app's `LOKI_PUSH_URL` = `https://foodme-loki-xxxx.onrender.com/loki/api/v1/push`
    and let the app redeploy.
-5. Grafana MCP tokens (on the `foodme-grafana-mcp` service), then redeploy it:
+5. Grafana MCP tokens — **optional for deployment** (the service is healthy
+   without them; they gate querying Grafana and caller auth). Set on the
+   `foodme-grafana-mcp` service, then redeploy it:
    - `GRAFANA_SERVICE_ACCOUNT_TOKEN` — Grafana → Administration → Service accounts →
      create SA (Editor) → generate token.
    - `MCP_GRAFANA_SERVER_TOKEN` — your own secret: `openssl rand -hex 32`.
+     Unset = the MCP serves unauthenticated to anyone with the URL.
 
 Login: `admin` / `admin` (change it after first login).
 

@@ -64,10 +64,15 @@ Note:
 3. **Ship logs.** On the **app** service set `LOKI_PUSH_URL` to
    `https://foodme-loki-xxxx.onrender.com/loki/api/v1/push` and let it redeploy.
 
-4. **Grafana MCP tokens** (on the `foodme-grafana-mcp` service), then redeploy it:
+4. **Grafana MCP tokens** — *optional for deployment*. `foodme-grafana-mcp`
+   deploys and passes its health check with none of these set; you only need
+   them to actually query Grafana through the MCP (and to require auth from
+   callers). Set them on the `foodme-grafana-mcp` service, then redeploy it:
    - `GRAFANA_SERVICE_ACCOUNT_TOKEN` — Grafana → Administration → Service
      accounts → create SA (Editor) → generate token.
    - `MCP_GRAFANA_SERVER_TOKEN` — your own secret: `openssl rand -hex 32`.
+     Until this is set the MCP serves **unauthenticated** to anyone who finds
+     the URL, and logs a SECURITY warning on startup.
 
 Grafana login: `admin` / `admin` (change it after first login).
 
