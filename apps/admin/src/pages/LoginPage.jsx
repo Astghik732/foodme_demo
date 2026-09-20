@@ -9,6 +9,7 @@ import {
     Alert,
     CircularProgress,
 } from '@mui/material';
+import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 
 const LoginPage = () => {
     const [username, setUsername] = useState('');
@@ -39,13 +40,27 @@ const LoginPage = () => {
                 justifyContent: 'center',
                 alignItems: 'center',
                 minHeight: '100vh',
-                bgcolor: '#f7f9fc',
+                background: 'linear-gradient(135deg, #FFF7ED 0%, #F8FAFC 60%)',
                 p: 2,
             }}
         >
-            <Paper elevation={3} sx={{ width: '100%', maxWidth: 400, borderRadius: '16px', overflow: 'hidden' }}>
-                <Box sx={{ bgcolor: 'primary.main', py: 3, px: 4, color: 'white', textAlign: 'center' }}>
-                    <Typography variant="h5" component="h1" fontWeight="600">
+            <Paper elevation={0} sx={{ width: '100%', maxWidth: 400, borderRadius: '16px', overflow: 'hidden', border: '1px solid', borderColor: 'divider', boxShadow: '0 10px 30px rgba(15, 23, 42, 0.10)' }}>
+                <Box sx={{ bgcolor: 'primary.main', py: 3, px: 4, color: 'primary.contrastText', textAlign: 'center' }}>
+                    <Box
+                        sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 48,
+                            height: 48,
+                            borderRadius: '12px',
+                            bgcolor: 'rgba(255,255,255,0.18)',
+                            mb: 1,
+                        }}
+                    >
+                        <RestaurantMenuIcon />
+                    </Box>
+                    <Typography variant="h5" component="h1" fontWeight="700">
                         FoodMe Admin
                     </Typography>
                     <Typography variant="body2" sx={{ mt: 1, opacity: 0.9 }}>

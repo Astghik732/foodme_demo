@@ -8,6 +8,8 @@ import authProvider from './providers/authProvider.js';
 import dataProvider from './providers/dataProvider.js';
 import AppLayout from './layout/AppLayout.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import Dashboard from './pages/Dashboard.jsx';
+import foodmeTheme from './theme/theme.js';
 
 import OrderList from './pages/orders/OrderList.jsx';
 import OrderShow from './pages/orders/OrderShow.jsx';
@@ -28,6 +30,8 @@ function App() {
                 authProvider={authProvider}
                 loginPage={LoginPage}
                 layout={AppLayout}
+                dashboard={Dashboard}
+                theme={foodmeTheme}
                 requireAuth
             >
                 <Resource
