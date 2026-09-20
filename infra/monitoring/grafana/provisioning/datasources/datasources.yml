@@ -1,13 +1,19 @@
 apiVersion: 1
 
+# On Render's FREE plan, web services cannot RECEIVE private-network traffic, so
+# Grafana reaches Prometheus and Loki over their PUBLIC URLs. The urls below are
+# filled from environment variables at Grafana startup (Grafana expands ${VAR}
+# in provisioning files). Set these on the Grafana service in Render:
+#   PROMETHEUS_URL = https://foodme-prometheus-xxxx.onrender.com
+#   LOKI_URL       = https://foodme-loki-xxxx.onrender.com
+# (no trailing slash). See infra/monitoring/README.md.
 datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
     # Fixed uid so provisioned dashboards can reference this datasource.
     uid: prometheus
-    # Private hostname:port of the Prometheus service on Render (= service name).
-    url: http://foodme-prometheus:10000
+    url: ${PROMETHEUS_URL}
     isDefault: true
     editable: false
 
@@ -15,5 +21,5 @@ datasources:
     type: loki
     access: proxy
     uid: loki
-    url: http://foodme-loki:10000
+    url: ${LOKI_URL}
     editable: false

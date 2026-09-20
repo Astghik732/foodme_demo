@@ -1,16 +1,19 @@
-# FoodMe monitoring stack — SEPARATE blueprint, deploy AFTER the main app.
-# Apply this into the SAME Render project + region as the app so private
-# networking (service-name DNS) resolves. All services are free/ephemeral and
-# never auto-redeploy on app code pushes (autoDeploy: false).
+# FoodMe monitoring stack — SEPARATE blueprint, deploy AFTER the main app,
+# into the same region. All services are free/ephemeral and never auto-redeploy
+# on app code pushes (autoDeploy: false).
 #
-# NOTE: Render's FREE plan does not offer private services (pserv), so every
-# service here is a "web" service. Prometheus/Loki are still reached internally
-# via private DNS (foodme-prometheus:PORT / foodme-loki:PORT), but on free they
-# also expose a public URL. For truly private Prometheus/Loki, switch those two
-# to `type: pserv` on a paid plan (plan: starter).
-#
-# Internal URLs are wired by SERVICE NAME. If you rename a service, update every
-# reference: datasources.yml, the backend LOKI_PUSH_URL, and GRAFANA_URL below.
+# IMPORTANT — free tier has NO private networking you can receive on:
+# Render's free web services can SEND private-network requests but cannot
+# RECEIVE them, so private hostnames (foodme-loki:10000, etc.) do NOT work here.
+# Every internal hop therefore uses the target's PUBLIC *.onrender.com URL,
+# supplied per-deploy via the `sync: false` env vars below (each is unique to
+# your deploy — copy it from that service's page in the Render dashboard):
+#   foodme-prometheus  -> BACKEND_HOST  (your backend's public host, no scheme/port)
+#   Grafana            -> PROMETHEUS_URL, LOKI_URL  (full https URLs)
+#   foodme-grafana-mcp -> GRAFANA_URL   (Grafana's full https URL)
+#   backend service    -> LOKI_PUSH_URL (Loki's https URL + /loki/api/v1/push)
+# For hash-free private DNS instead, upgrade the receiving services to a paid
+# plan (plan: starter) — then use foodme-<name>:10000 URLs. See README.
 
 services:
   # --- Prometheus -----------------------------------------------------------
@@ -23,6 +26,12 @@ services:
     dockerfilePath: ./infra/monitoring/prometheus/Dockerfile
     dockerContext: ./infra/monitoring/prometheus
     healthCheckPath: /-/healthy
+    envVars:
+      # Backend's PUBLIC host (no scheme, no port) — Prometheus scrapes it over
+      # https because free web services can't be reached privately.
+      # e.g. foodme-armanayvazyan-xxxx.onrender.com
+      - key: BACKEND_HOST
+        sync: false
 
   # --- Loki -----------------------------------------------------------------
   - type: web
@@ -47,11 +56,19 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: GF_SECURITY_ADMIN_PASSWORD
-        sync: false
+        value: admin
       - key: GF_SECURITY_ADMIN_USER
         value: admin
       - key: GF_USERS_ALLOW_SIGN_UP
         value: "false"
+      # PUBLIC URLs of Prometheus/Loki (free web services can't be reached
+      # privately). Grafana expands these into datasources.yml at startup.
+      # e.g. https://foodme-prometheus-xxxx.onrender.com
+      - key: PROMETHEUS_URL
+        sync: false
+      # e.g. https://foodme-loki-xxxx.onrender.com
+      - key: LOKI_URL
+        sync: false
 
   # --- Grafana MCP (serves metrics + logs + dashboards) ---------------------
   - type: web
@@ -67,9 +84,10 @@ services:
     dockerCommand: /bin/sh -c 'exec /app/mcp-grafana -transport streamable-http -address 0.0.0.0:$PORT -allowed-hosts "*"'
     healthCheckPath: /healthz
     envVars:
-      # MUST match the foodme-armanayvazyan-grafana service `name` above (rename together).
+      # Grafana's PUBLIC URL (free web services can't be reached privately).
+      # e.g. https://foodme-armanayvazyan-grafana-xxxx.onrender.com
       - key: GRAFANA_URL
-        value: http://foodme-armanayvazyan-grafana:10000
+        sync: false
       # Service-account token the MCP uses to call Grafana (queries Prometheus + Loki + dashboards)
       - key: GRAFANA_SERVICE_ACCOUNT_TOKEN
         sync: false

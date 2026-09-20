@@ -1,25 +1,35 @@
 # Monitoring stack (Prometheus + Loki + Grafana + Grafana MCP)
 
 Separate Render blueprint (`render-monitoring.yaml`), deployed **after** the app,
-into the **same Render project + region** (required for private DNS).
+into the **same Render project + region**.
+
+> **Free tier can't receive private traffic.** Render's free web services can
+> *send* private-network requests but **cannot receive** them, so private
+> hostnames like `foodme-loki:10000` do **not** work. Every hop below uses the
+> target's **public** `*.onrender.com` URL, supplied per-deploy via `sync: false`
+> env vars (copy each from that service's page in the Render dashboard). Want
+> real private DNS? Put the receiving services on a paid plan (`plan: starter`).
 
 ## Scaffolding
 
 1. Deploy the app: `render.yaml`.
 2. Deploy this stack: Render → New → Blueprint → `render-monitoring.yaml`.
-   Set `GF_SECURITY_ADMIN_PASSWORD` when prompted. Wait for `foodme-prometheus`,
-   `foodme-loki`, `foodme-grafana` to go live.
-3. Confirm each service's internal port (Render → service → Connect). If not
-   `10000`, update `prometheus/prometheus.yml`, `grafana/provisioning/datasources/datasources.yml`,
-   and the `foodme-grafana-mcp` `GRAFANA_URL`, then redeploy.
-4. Ship logs: set the app's `LOKI_PUSH_URL` = `http://foodme-loki:<port>/loki/api/v1/push`
+   Wait for `foodme-prometheus`, `foodme-loki`, `foodme-grafana` to go live,
+   then copy each service's public URL.
+3. Wire the public URLs (Render → service → Environment), then redeploy each:
+   - `foodme-prometheus` → `BACKEND_HOST` = backend host only, no scheme/port
+     (e.g. `foodme-<user>-xxxx.onrender.com`).
+   - Grafana → `PROMETHEUS_URL` = `https://foodme-prometheus-xxxx.onrender.com`,
+     `LOKI_URL` = `https://foodme-loki-xxxx.onrender.com`.
+   - `foodme-grafana-mcp` → `GRAFANA_URL` = `https://foodme-<user>-grafana-xxxx.onrender.com`.
+4. Ship logs: set the app's `LOKI_PUSH_URL` = `https://foodme-loki-xxxx.onrender.com/loki/api/v1/push`
    and let the app redeploy.
 5. Grafana MCP tokens (on the `foodme-grafana-mcp` service), then redeploy it:
    - `GRAFANA_SERVICE_ACCOUNT_TOKEN` — Grafana → Administration → Service accounts →
      create SA (Editor) → generate token.
    - `MCP_GRAFANA_SERVER_TOKEN` — your own secret: `openssl rand -hex 32`.
 
-Login: `admin` / `GF_SECURITY_ADMIN_PASSWORD`.
+Login: `admin` / `admin` (change it after first login).
 
 ## E2E
 
