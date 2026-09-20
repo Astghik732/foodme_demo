@@ -117,16 +117,15 @@ Done. 🎉
   query again.
 - Metrics and logs are kept for a maximum of **2 days**.
 
-## Optional (for the curious): Grafana MCP tokens
+## Connecting AI tools to Grafana (MCP)
 
-Everything above works without this. Only needed if you want AI tools to query
-your Grafana through the built-in MCP endpoint (`/mcp`). On `foodme-monitoring`
-set two more environment variables:
+The stack exposes a built-in Grafana MCP endpoint at `/mcp` so AI tools can query
+your metrics and logs. **There is nothing to configure** — the MCP authenticates
+to Grafana as the admin user automatically, and the endpoint needs no token.
 
-- `GRAFANA_SERVICE_ACCOUNT_TOKEN` — in Grafana: **Administration → Service
-  accounts** → create an account (role: Editor) → **Generate token** → copy it.
-- `MCP_GRAFANA_SERVER_TOKEN` — any long random secret you invent (this becomes
-  the password callers must send). Until it is set, the MCP endpoint is open to
-  anyone who finds the URL.
+Just point your client at `https://foodme-monitoring-<hash>.onrender.com/mcp`.
+Note the endpoint is currently **open** to anyone with the URL (full admin-level
+Grafana access) — fine for a workshop, but don't treat the URL as a secret.
 
-More technical detail lives in `infra/monitoring/README.md`.
+More technical detail, including ready-to-paste Claude Code and Claude Desktop
+configs, lives in `infra/monitoring/README.md`.

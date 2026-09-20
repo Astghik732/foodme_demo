@@ -55,9 +55,9 @@ services:
         value: admin
       - key: GF_USERS_ALLOW_SIGN_UP
         value: "false"
-      # Optional. Unset just means the MCP can't query Grafana / doesn't
-      # require callers to authenticate — the service still deploys green.
-      - key: GRAFANA_SERVICE_ACCOUNT_TOKEN
-        sync: false
+      # The MCP queries Grafana as the admin user (basic auth) via the
+      # entrypoint — nothing to set here. We deliberately do NOT use a
+      # GRAFANA_SERVICE_ACCOUNT_TOKEN: it would live in Grafana's
+      # wiped-on-redeploy SQLite DB and go stale after every deploy.
       - key: MCP_GRAFANA_SERVER_TOKEN
         sync: false

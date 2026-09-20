@@ -37,14 +37,57 @@ behind nginx, talking to each other over loopback:
 That's it. Grafana's datasources, the dashboards, and the MCP's Grafana
 connection are all provisioned already.
 
-Grafana MCP tokens are **optional** — the service deploys green without them;
-they gate querying Grafana and caller auth. To set them (same service, then
-redeploy):
+There is **nothing to set** for the MCP to work:
 
-- `GRAFANA_SERVICE_ACCOUNT_TOKEN` — Grafana → Administration → Service accounts →
-  create SA (Editor) → generate token.
-- `MCP_GRAFANA_SERVER_TOKEN` — your own secret: `openssl rand -hex 32`.
-  Unset = the MCP serves unauthenticated to anyone with the URL.
+- **How the MCP reaches Grafana** — the entrypoint logs the MCP in as the
+  Grafana **admin** user (`admin` / `admin`, i.e. the `GF_SECURITY_ADMIN_USER` /
+  `GF_SECURITY_ADMIN_PASSWORD` values) over loopback. Those are plain env vars
+  re-applied on every boot, so this **survives redeploys** with no manual step.
+  We deliberately do **not** use a service-account token: it would live in
+  Grafana's SQLite DB, which the free tier wipes on every restart, so it would
+  go stale after the next deploy.
+- **Caller auth on the MCP endpoint** — currently **none**. The `/mcp` endpoint
+  is served **open** to anyone with the URL, with full admin-level access to your
+  Grafana. That is acceptable for a throwaway workshop but is not a secret URL.
+  `MCP_GRAFANA_SERVER_TOKEN` exists as a placeholder env var but is **not yet
+  wired** to any auth check — setting it does nothing today. If you need to lock
+  the endpoint down, add a bearer check in `nginx.conf.template` for `/mcp`.
+
+## Connecting Claude to the Grafana MCP
+
+The MCP is served over **streamable-http** at
+`https://foodme-monitoring-<hash>.onrender.com/mcp`. Add it to your Claude
+config so Claude can query Prometheus/Loki through Grafana.
+
+**Claude Code (CLI):**
+
+```bash
+claude mcp add --transport http foodme-grafana \
+  https://foodme-monitoring-<hash>.onrender.com/mcp
+```
+
+**Claude Desktop** (`claude_desktop_config.json` → `mcpServers`). Desktop speaks
+only stdio, so a remote streamable-http server is bridged with `mcp-remote`:
+
+```json
+{
+  "mcpServers": {
+    "foodme-grafana": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://foodme-monitoring-<hash>.onrender.com/mcp"
+      ]
+    }
+  }
+}
+```
+
+Replace `<hash>` with your service's URL. The endpoint is open (see caller-auth
+note above), so no auth header is needed. Requires Node (`npx`) on the machine.
+Restart Claude (or re-run the CLI) and the Grafana tools (list datasources, run
+PromQL/LogQL) become available.
 
 ## Data retention
 
@@ -63,8 +106,8 @@ survive restarts.
 - **Backend → Loki**: Grafana → Explore → Loki → `{app="foodme-backend"}` → recent lines.
 - **Datasources**: Grafana → Connections → Data sources → Prometheus + Loki both test green.
 - **Grafana MCP**: connect to `https://foodme-monitoring-<hash>.onrender.com/mcp`
-  (streamable-http) with header `Authorization: Bearer <MCP_GRAFANA_SERVER_TOKEN>`,
-  then list datasources, run PromQL (`up`) and LogQL (`{app="foodme-backend"}`).
+  (streamable-http, no auth header needed), then list datasources, run PromQL
+  (`up`) and LogQL (`{app="foodme-backend"}`).
 
 If a panel shows "no data", the instance most likely spun down: free services
 sleep when idle and take ~15-30s to wake, which can exceed Grafana's query

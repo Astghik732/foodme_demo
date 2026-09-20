@@ -41,4 +41,15 @@ fi
 sed "s|__PORT__|${PORT}|g" \
     /etc/foodme/nginx.conf.template > /etc/nginx/nginx.conf
 
+# The Grafana MCP needs credentials to query Grafana. A service account token is
+# the obvious choice, but that token lives in Grafana's SQLite DB under
+# /var/lib/grafana, which is WIPED on every redeploy (free tier has no disk) —
+# so it would go stale after the next deploy and the MCP would silently lose
+# access. So we don't use one: authenticate the MCP as the admin user over
+# loopback instead. Those credentials are stable env vars re-applied fresh on
+# every boot, so nothing to persist and nothing to regenerate.
+export GRAFANA_USERNAME="${GF_SECURITY_ADMIN_USER:-admin}"
+export GRAFANA_PASSWORD="${GF_SECURITY_ADMIN_PASSWORD:-admin}"
+echo "entrypoint: MCP authenticates to Grafana as admin (basic auth)"
+
 exec supervisord -c /etc/foodme/supervisord.conf
