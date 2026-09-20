@@ -61,8 +61,9 @@ config so Claude can query Prometheus/Loki through Grafana.
 **Claude Code (CLI):**
 
 ```bash
-claude mcp add --transport http foodme-grafana \
-  https://foodme-monitoring-<hash>.onrender.com/mcp
+ claude mcp add foodme-grafana -- npx -y mcp-remote \                                                                                                                                          
+    https://foodme-monitoring-<hash>.onrender.com/mcp \                                                                                                                                           
+    --header "Authorization: Basic <base 64 of username:password>"      
 ```
 
 **Claude Desktop** (`claude_desktop_config.json` → `mcpServers`). Desktop speaks
@@ -76,7 +77,9 @@ only stdio, so a remote streamable-http server is bridged with `mcp-remote`:
       "args": [
         "-y",
         "mcp-remote",
-        "https://foodme-monitoring-<hash>.onrender.com/mcp"
+        "https://foodme-monitoring-<hash>.onrender.com/mcp",
+        "--header",
+        "Authorization: Basic <base 64 of username:password>"
       ]
     }
   }
