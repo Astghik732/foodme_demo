@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 ## Project overview
 
@@ -88,53 +88,23 @@ both `apps/web` and `apps/admin`.
 Frontend Sentry DSNs are baked in at Docker build time via build args
 (`VITE_SENTRY_DSN_WEB` / `VITE_SENTRY_DSN_ADMIN`), not read at runtime.
 
-### Backend structure (`apps/backend/src/main/java/am/foodme/backend`)
+### Per-app architecture
 
-- `controller/api` — customer-facing REST endpoints (chefs, dishes, customer auth, orders,
-  images, debug)
-- `controller/admin` — JWT-protected admin REST endpoints (auth, chefs, dishes, orders),
-  mounted under `/admin/**`
-- `security` — JWT issuing/validation (`JwtService`, `JwtAuthenticationFilter`,
-  `SecurityConfig`)
-- `service`, `repository`, `model`, `dto` — standard Spring layering
-- `observability` — Prometheus metrics / request logging glue
-- `config/DatabaseUrlEnvironmentPostProcessor` — accepts a plain `DATABASE_URL`
-  (e.g. a pasted Neon connection string) and converts it into the
-  `spring.datasource.*` properties Spring expects, so students can paste a cloud Postgres
-  URL directly without manual JDBC conversion
-- `config/SimulatedLatencyConfig` — artificial request latency, controlled by
-  `foodme.latency.min-ms` / `max-ms` (zeroed in the `test` profile)
+Backend, web storefront, and admin backoffice each have their own detailed,
+step-by-step architecture doc under `.agents/rules/` (symlinked at `.claude/rules/`) —
+read the one for whatever you're touching:
 
-Dish/chef images are stored as blobs in Postgres (`foodme.image` table, seeded from
-`src/main/resources/img-seed` on first boot via `ImageSeedRunner`) and served from the
-backend at `/api/images/**` — there is no object storage / CDN.
-
-Logging/observability is wired for the monitoring stack regardless of environment:
-structured JSON logs (`logstash-logback-encoder`), an optional Loki appender
-(no-op unless `LOKI_PUSH_URL` is set), Prometheus metrics at `/actuator/prometheus`, and
-Sentry/GlitchTip error reporting (no-op unless `SENTRY_DSN` is set).
-
-### Web storefront (`apps/web/src`)
-
-- `api` — backend HTTP calls (base URL from `VITE_API_BASE_URL`)
-- `pages` — one directory per route (Home, Explore, Chef, Checkout, Orders, OrderStatus,
-  Tracking, Login, Register)
-- `components/ui` — shadcn/radix-based primitives; `components/sections` /
-  `components/layout` — page composition
-- `hooks/useCart.ts` + `lib/db.ts` — cart state is persisted client-side with Dexie
-  (IndexedDB), not server-side, so cart contents survive reloads without an account
-- `providers` — React context providers (e.g. auth)
-- `lib/auth-next.ts` / `lib/auth-storage.ts` — customer auth/session handling
-- Path alias `@/*` → `src/*` (configured in `vite.config.ts` / `tsconfig.app.json`)
-- i18n via `i18next` (`lib/i18n.ts`, `locales/`)
-- Forms: `react-hook-form` + `zod` schemas (`schemas/`)
-
-### Admin backoffice (`apps/admin/src`)
-
-Built on `react-admin` (resource-oriented CRUD framework over MUI), not a hand-rolled
-router/data layer — `pages/{chefs,dishes,orders}` plug into react-admin's resource
-convention. `security/` holds the react-admin `authProvider`; `api/` holds the data
-provider talking to the backend's `/admin/**` JWT-protected endpoints.
+- **`.agents/rules/backend-architecture.md`** — Spring Boot layering, the exact
+  security filter-chain rule order, JWT verification, DTO conventions, data layer,
+  error handling, observability, and a documented real bug in the admin chef-update
+  path worth knowing about before touching entity-bound admin updates.
+- **`.agents/rules/web-architecture.md`** — the customer storefront's boot sequence,
+  API client, auth storage, the Dexie-backed cart's business rules (single-chef cart,
+  minimum order quantity, decrement-to-removal), and page/forms/i18n conventions.
+- **`.agents/rules/admin-architecture.md`** — the backoffice's `react-admin` wiring
+  (`dataProvider`/`authProvider`, the `{list, count}` ↔ `{data, total}` shape contract
+  with the backend, hash routing, and why `security/ProtectedRoute.jsx` /
+  `GuestRoute.jsx` aren't actually on the active auth path).
 
 ### Monitoring stack (`infra/monitoring`)
 
