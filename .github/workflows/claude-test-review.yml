@@ -1,0 +1,76 @@
+# Automated TEST review by Claude Code: checks that a PR's behavior changes are covered by
+# tests and that the tests it adds or changes are good, following this repo's conventions
+# (.claude/skills/writing-tests).
+#
+# Required repo secret: CLAUDE_CODE_OAUTH_TOKEN (see claude-pr-review.yml).
+name: Claude Test Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "apps/**"
+      - "!apps/**/*.md"
+
+concurrency:
+  group: claude-test-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  test-review:
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude test review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            You are a senior QA engineer reviewing the TESTS of this pull request. Read the
+            diff with `gh pr diff`, then read `.claude/skills/writing-tests/SKILL.md` and
+            the existing tests for the conventions.
+
+            Step 1 - Map changes to coverage. List each behavior the PR adds or changes
+            (endpoint, validation rule, business rule, UI flow, error message) and say
+            whether a test in this PR covers it. Backend tests live in
+            `apps/backend/src/test/testCases` (JUnit 5 + MockMvc, `@ActiveProfiles("test")`);
+            frontend coverage is Playwright E2E in `apps/web/e2e` and `apps/admin/e2e`.
+
+            Step 2 - Judge test quality:
+            - Happy path AND negative paths (auth missing, wrong owner, invalid input, limits
+              and boundaries, duplicates, state transitions).
+            - Assertions are meaningful (status AND body/message), not just "does not throw".
+            - Tests are independent and deterministic: unique emails per test, no reliance on
+              global sequence values or class execution order, no fixed sleeps.
+            - Names follow `method_scenario_expectedResult`; Playwright specs prefer
+              role/label locators and reuse `e2e/auth.ts` helpers.
+            - Seed fixtures (`src/test/resources/data.sql`) are not edited to suit one test.
+            - Flag tests that can never run, e.g. a test directory missing from the Gradle
+              test source set, and tests that were weakened, deleted or skipped.
+
+            Step 3 - Propose the missing test cases concretely: title, preconditions, steps,
+            expected result, in the same style as the repo's tests.
+
+            Post ONE top-level comment with `gh pr comment` using this structure:
+            "Coverage map" table (behavior | covered? | test), "Test quality findings"
+            (file:line), "Missing test cases", and a verdict
+            (tests sufficient / needs more tests). Use inline comments only for specific
+            line-level problems in test code. Do not modify any files.
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(git diff:*),Bash(git log:*),Read,Grep,Glob"
