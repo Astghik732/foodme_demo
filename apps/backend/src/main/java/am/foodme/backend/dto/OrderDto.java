@@ -33,6 +33,7 @@ public class OrderDto {
     private List<CreateOrderDishDto> createOrderDishes;
     private List<OrderDishDto> orderDishList;
     private LocalDateTime createdAt;
+    private OrderRatingDto rating;
 
     public static OrderDto mapEntityToDto(Order entity) {
         if (entity == null) {
@@ -61,6 +62,7 @@ public class OrderDto {
         }
         // FM-BUG-06
         dto.setCreatedAt(entity.getCreatedAt());
+        dto.setRating(OrderRatingDto.mapEntityToDto(entity.getRating()));
         return dto;
     }
 }
