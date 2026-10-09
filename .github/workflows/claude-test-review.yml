@@ -1,8 +1,14 @@
-# Automated TEST review by Claude Code: checks that a PR's behavior changes are covered by
-# tests and that the tests it adds or changes are good, following this repo's conventions
-# (.claude/skills/writing-tests).
+# Automated TEST review by Claude Code. The review itself is defined by the project skill
+# `reviewing-test-cases` (.claude/skills/reviewing-test-cases/SKILL.md -> ISTQB review
+# criteria, severity levels, report format and inline-comment rules). This workflow only
+# tells Claude to load and follow that skill, so edit the skill, not this file, to change
+# how tests are reviewed.
+#
+# Runs automatically on PRs touching apps/**, or manually: Actions > Claude Test Review >
+# Run workflow, then enter the PR number.
 #
 # Required repo secret: CLAUDE_CODE_OAUTH_TOKEN (see claude-code-review.yml).
+# NOTE: the skill file must exist on the branch this workflow checks out (it is on main).
 name: Claude Test Review
 
 on:
@@ -11,9 +17,15 @@ on:
     paths:
       - "apps/**"
       - "!apps/**/*.md"
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull request number to review"
+        required: true
+        type: string
 
 concurrency:
-  group: claude-test-review-${{ github.event.pull_request.number }}
+  group: claude-test-review-${{ github.event.pull_request.number || inputs.pr_number }}
   cancel-in-progress: true
 
 permissions:
@@ -25,52 +37,45 @@ permissions:
 jobs:
   test-review:
     if: >-
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.head.repo.full_name == github.repository
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.draft == false &&
+       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # Manual runs check out the PR's merge ref; PR events use the default ref.
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/pull/{0}/merge', inputs.pr_number) || '' }}
 
-      - name: Claude test review
+      - name: Make sure the skill is present
+        run: test -f .claude/skills/reviewing-test-cases/SKILL.md
+
+      - name: Claude test review (skill reviewing-test-cases)
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
             REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
+            PR NUMBER: ${{ env.PR_NUMBER }}
 
-            You are a senior QA engineer reviewing the TESTS of this pull request. Read the
-            diff with `gh pr diff`, then read `.claude/skills/writing-tests/SKILL.md` and
-            the existing tests for the conventions.
+            Use the `reviewing-test-cases` skill (invoke it with the Skill tool, or if that is
+            unavailable read `.claude/skills/reviewing-test-cases/SKILL.md` in full) and follow
+            it exactly: ISTQB technical review, its checklist, severity levels, inline-comment
+            rules and report format.
 
-            Step 1 - Map changes to coverage. List each behavior the PR adds or changes
-            (endpoint, validation rule, business rule, UI flow, error message) and say
-            whether a test in this PR covers it. Backend tests live in
-            `apps/backend/src/test/testCases` (JUnit 5 + MockMvc, `@ActiveProfiles("test")`);
-            frontend coverage is Playwright E2E in `apps/web/e2e` and `apps/admin/e2e`.
+            Scope: the tests changed in this pull request. Get them with `gh pr diff ${{ env.PR_NUMBER }}`
+            and `gh pr view ${{ env.PR_NUMBER }}`; use any Jira key in the PR title/branch (e.g. KAN-5)
+            as the test basis only if you can read it from the PR text, otherwise use the diff.
 
-            Step 2 - Judge test quality:
-            - Happy path AND negative paths (auth missing, wrong owner, invalid input, limits
-              and boundaries, duplicates, state transitions).
-            - Assertions are meaningful (status AND body/message), not just "does not throw".
-            - Tests are independent and deterministic: unique emails per test, no reliance on
-              global sequence values or class execution order, no fixed sleeps.
-            - Names follow `method_scenario_expectedResult`; Playwright specs prefer
-              role/label locators and reuse `e2e/auth.ts` helpers.
-            - Seed fixtures (`src/test/resources/data.sql`) are not edited to suit one test.
-            - Flag tests that can never run, e.g. a test directory missing from the Gradle
-              test source set, and tests that were weakened, deleted or skipped.
-
-            Step 3 - Propose the missing test cases concretely: title, preconditions, steps,
-            expected result, in the same style as the repo's tests.
-
-            Post ONE top-level comment with `gh pr comment` using this structure:
-            "Coverage map" table (behavior | covered? | test), "Test quality findings"
-            (file:line), "Missing test cases", and a verdict
-            (tests sufficient / needs more tests). Use inline comments only for specific
-            line-level problems in test code. Do not modify any files.
+            Output rules for this CI run:
+            - Post line-specific problems as inline comments with
+              `mcp__github_inline_comment__create_inline_comment` (skill section 5, option 1).
+            - Post ONE top-level summary comment with `gh pr comment ${{ env.PR_NUMBER }}` in the skill's
+              report format (verdict, coverage map, findings table, missing test cases).
+            - Do not modify any files and do not push.
           claude_args: |
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(git diff:*),Bash(git log:*),Read,Grep,Glob"
+            --allowedTools "Skill,mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(git diff:*),Bash(git log:*),Read,Grep,Glob"
