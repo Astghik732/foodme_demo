@@ -2,7 +2,7 @@
 # tests and that the tests it adds or changes are good, following this repo's conventions
 # (.claude/skills/writing-tests).
 #
-# Required repo secret: CLAUDE_CODE_OAUTH_TOKEN (see claude-pr-review.yml).
+# Required repo secret: CLAUDE_CODE_OAUTH_TOKEN (see claude-code-review.yml).
 name: Claude Test Review
 
 on:

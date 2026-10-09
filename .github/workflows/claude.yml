@@ -2,7 +2,7 @@
 # question or request a change (e.g. "@claude review the test cases", "@claude fix the
 # failing validation").
 #
-# Required repo secret: CLAUDE_CODE_OAUTH_TOKEN (see claude-pr-review.yml).
+# Required repo secret: CLAUDE_CODE_OAUTH_TOKEN (see claude-code-review.yml).
 # Only users with write access to the repo can trigger the action.
 name: Claude
 

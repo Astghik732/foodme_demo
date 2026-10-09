@@ -1,4 +1,5 @@
-# Automated PR code review by Claude Code.
+# Automated code review by Claude Code: reads the code changed in a PR and reports bugs,
+# security issues and convention violations (it does not review the PR text itself).
 #
 # Required repo secret (Settings > Secrets and variables > Actions):
 #   CLAUDE_CODE_OAUTH_TOKEN - generated locally with `claude setup-token`
@@ -8,14 +9,14 @@
 #
 # Fork PRs do not receive repo secrets, so this job only runs for PRs opened
 # from branches in this repository.
-name: Claude PR Review
+name: Claude Code Review
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
-  group: claude-pr-review-${{ github.event.pull_request.number }}
+  group: claude-code-review-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
@@ -25,7 +26,7 @@ permissions:
   id-token: write
 
 jobs:
-  review:
+  code-review:
     if: >-
       github.event.pull_request.draft == false &&
       github.event.pull_request.head.repo.full_name == github.repository
@@ -36,7 +37,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Claude code review
+      - name: Review the code
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -44,9 +45,12 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            Review this pull request. Use `gh pr diff` and `gh pr view` to read it, and read
-            the surrounding code and the repo's CLAUDE.md and `.agents/rules/*.md`
+            Do a CODE review of the source changes in this change set (production code, not
+            the PR description, title or process). Use `gh pr diff` to get the changed code
+            and read the surrounding code and the repo's CLAUDE.md and `.agents/rules/*.md`
             (backend-architecture, web-architecture, admin-architecture) before judging.
+            Test files are reviewed separately by the test-review job; only comment on them
+            if they hide a bug in the code under test.
 
             Focus on, in order:
             1. Correctness bugs and regressions (logic errors, null handling, off-by-one,
