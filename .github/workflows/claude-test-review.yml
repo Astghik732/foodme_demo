@@ -63,19 +63,25 @@ jobs:
             PR NUMBER: ${{ env.PR_NUMBER }}
 
             Use the `reviewing-test-cases` skill (invoke it with the Skill tool, or if that is
-            unavailable read `.claude/skills/reviewing-test-cases/SKILL.md` in full) and follow
-            it exactly: ISTQB technical review, its checklist, severity levels, inline-comment
-            rules and report format.
+            unavailable read `.claude/skills/reviewing-test-cases/SKILL.md` in full) and run it
+            in CI MODE exactly as the skill describes. This is an unattended run: do not ask
+            questions.
 
-            Scope: the tests changed in this pull request. Get them with `gh pr diff ${{ env.PR_NUMBER }}`
-            and `gh pr view ${{ env.PR_NUMBER }}`; use any Jira key in the PR title/branch (e.g. KAN-5)
-            as the test basis only if you can read it from the PR text, otherwise use the diff.
+            Report exactly two things about this pull request:
+            1. BAD TESTS - tests added/changed in the PR that are written badly.
+            2. MISSING TESTS - behaviors the PR adds or changes (and the acceptance criteria of
+               its Jira story/PRD) that no test covers, as concrete test cases.
+
+            Get the change with `gh pr diff ${{ env.PR_NUMBER }}` and `gh pr view ${{ env.PR_NUMBER }}`;
+            use a Jira key in the PR title/branch/body (e.g. KAN-5) as the test basis, otherwise
+            the PR description and diff.
 
             Output rules for this CI run:
-            - Post line-specific problems as inline comments with
-              `mcp__github_inline_comment__create_inline_comment` (skill section 5, option 1).
-            - Post ONE top-level summary comment with `gh pr comment ${{ env.PR_NUMBER }}` in the skill's
-              report format (verdict, coverage map, findings table, missing test cases).
+            - Post every bad-test finding that has a specific line as an inline comment with
+              `mcp__github_inline_comment__create_inline_comment` (skill section 5).
+            - Post ONE top-level summary comment with `gh pr comment ${{ env.PR_NUMBER }}` that has
+              exactly the skill's two sections: "1. Bad tests" and "2. Missing tests"
+              (write "None found" for an empty one).
             - Do not modify any files and do not push.
           claude_args: |
             --allowedTools "Skill,mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(git diff:*),Bash(git log:*),Read,Grep,Glob"
