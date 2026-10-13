@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Package } from "lucide-react";
+import { ChevronRight, Package, Star } from "lucide-react";
 import { foodmeApi } from "@/api/foodme";
 import { Button } from "@/components/ui/button";
+import { OrderRatingDialog } from "@/components/sections/order-rating-dialog";
+import { StarRatingDisplay } from "@/components/sections/star-rating";
+import type { FullOrderDto } from "@/types";
 import { useAuth } from "@/providers/auth-provider";
 import { formatAmd } from "@/lib/utils";
 
@@ -28,6 +32,35 @@ function formatOrderDate(value: string) {
     month: "short",
     year: "numeric",
   });
+}
+
+// Rendered next to (not inside) the order's <Link> so the button isn't a nested interactive element.
+function OrderRatingRow({ order }: { order: FullOrderDto }) {
+  const [open, setOpen] = useState(false);
+
+  if (order.status !== "DELIVERED") return null;
+
+  if (order.rating) {
+    return (
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 px-5" data-testid={`order-rating-${order.number}`}>
+        <StarRatingDisplay stars={order.rating.stars} />
+        <span className="text-xs text-zinc-500">Your rating</span>
+        {order.rating.comment && (
+          <p className="w-full break-words text-sm text-zinc-600">“{order.rating.comment}”</p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 px-5">
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)} aria-label={`Rate order ${order.number}`}>
+        <Star aria-hidden="true" />
+        Rate order
+      </Button>
+      <OrderRatingDialog orderNumber={order.number} chefName={order.chefName} open={open} onOpenChange={setOpen} />
+    </div>
+  );
 }
 
 export default function Orders() {
@@ -120,6 +153,7 @@ export default function Orders() {
                   </div>
                 </div>
               </Link>
+              <OrderRatingRow order={order} />
             </li>
           ))}
         </ul>
