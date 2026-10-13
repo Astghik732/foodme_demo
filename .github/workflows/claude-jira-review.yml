@@ -3,10 +3,12 @@
 #
 # How it works
 #   1. Finds the Jira key (e.g. KAN-5) in the PR title, branch name or body.
-#   2. Starts the `mcp-atlassian` MCP server (https://github.com/sooperset/mcp-atlassian),
-#      read-only, authenticated with the Jira API token secret.
-#   3. Claude calls the `jira_get_issue` tool (mcp__mcp-atlassian__jira_get_issue) to read the
-#      ticket, reads the PR diff with `gh`, and posts ONE gap report as a PR comment.
+#   2. Starts the `mcp-atlassian` MCP server (https://github.com/sooperset/mcp-atlassian)
+#      authenticated with the Jira API token secret. Jira write access is enabled but limited
+#      to two tools: jira_get_issue (read) and jira_add_comment (write).
+#   3. Claude reads the ticket (mcp__mcp-atlassian__jira_get_issue), reads the PR diff with
+#      `gh`, posts ONE gap report as a PR comment, and adds a short summary comment on the
+#      Jira ticket (mcp__mcp-atlassian__jira_add_comment).
 #
 # REQUIRED repo secrets (Settings > Secrets and variables > Actions > Secrets):
 #   CLAUDE_CODE_OAUTH_TOKEN  from `claude setup-token` (or swap for anthropic_api_key below)
@@ -103,8 +105,11 @@ jobs:
         run: uvx mcp-atlassian --version || uvx mcp-atlassian --help | head -n 5
 
       # The MCP config is generated outside the workspace so the token is never committed
-      # or uploaded. READ_ONLY_MODE blocks every Jira write; ENABLED_TOOLS exposes only
-      # the issue-reading tool. Secrets are passed through the environment, not echoed.
+      # or uploaded. Jira WRITE access is on (READ_ONLY_MODE=false), but ENABLED_TOOLS limits
+      # Claude to exactly two tools: read an issue and add a comment. To allow more, add the
+      # tool name here AND in --allowedTools below (e.g. jira_transition_issue,
+      # jira_update_issue). The Atlassian account behind JIRA_API_TOKEN must have the "Add
+      # comments" permission in the project. Secrets are passed through the environment.
       - name: Write MCP config for Jira
         env:
           JIRA_URL: ${{ secrets.JIRA_BASE_URL }}
@@ -121,8 +126,8 @@ jobs:
                   JIRA_URL: $url,
                   JIRA_USERNAME: $user,
                   JIRA_API_TOKEN: $token,
-                  READ_ONLY_MODE: "true",
-                  ENABLED_TOOLS: "jira_get_issue"
+                  READ_ONLY_MODE: "false",
+                  ENABLED_TOOLS: "jira_get_issue,jira_add_comment"
                 }}}}' > "$RUNNER_TEMP/mcp-atlassian.json"
           echo "MCP_CONFIG=$RUNNER_TEMP/mcp-atlassian.json" >> "$GITHUB_ENV"
 
@@ -178,11 +183,18 @@ jobs:
               ### Beyond the ticket
               (scope creep / out-of-scope items implemented, or "None")
 
-            Keep it factual and concise. If the Jira tool fails or returns no ticket, post a short
-            comment saying the ticket could not be read and why, instead of guessing.
+            Step 5 - Report to Jira. Call `mcp__mcp-atlassian__jira_add_comment` on issue
+            "${{ steps.key.outputs.key }}" with a SHORT plain-text version of the result: the verdict, the
+            list of MISSING / PARTIAL / DIFFERENT items (one line each), and a link to the PR comment
+            (https://github.com/${{ github.repository }}/pull/${{ env.PR_NUMBER }}). Start it with
+            "Automated PR review (Claude):". Post exactly one Jira comment per run. Do NOT use any other
+            Jira write action: never change status, fields, assignee or description.
+
+            Keep it factual and concise. If the Jira read tool fails or returns no ticket, post a short
+            GitHub comment saying the ticket could not be read and why, instead of guessing, and skip Step 5.
           claude_args: |
             --mcp-config ${{ env.MCP_CONFIG }}
-            --allowedTools "mcp__mcp-atlassian__jira_get_issue,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(git diff:*),Bash(git log:*),Read,Grep,Glob"
+            --allowedTools "mcp__mcp-atlassian__jira_get_issue,mcp__mcp-atlassian__jira_add_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(git diff:*),Bash(git log:*),Read,Grep,Glob"
 
       - name: Remove MCP config
         if: always()
