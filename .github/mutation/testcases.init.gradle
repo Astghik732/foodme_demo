@@ -1,0 +1,10 @@
+// The backend tests live in src/test/testCases, which build.gradle does not put on the test
+// source set. Mutation testing needs them to run, so add the folder via an init script
+// (build.gradle itself is left untouched).
+allprojects {
+    afterEvaluate { p ->
+        if (p.plugins.hasPlugin('java')) {
+            p.sourceSets.test.java.srcDir 'src/test/testCases'
+        }
+    }
+}

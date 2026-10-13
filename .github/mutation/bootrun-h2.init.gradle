@@ -1,0 +1,11 @@
+// Lets `gradle bootRun` start the backend on an in-memory H2 database seeded with the test
+// fixture (src/test/resources/data.sql), so the frontend Playwright suites have an API to
+// talk to without Postgres. Use with SPRING_PROFILES_ACTIVE=test and PORT=<port>.
+allprojects {
+    afterEvaluate { p ->
+        if (p.plugins.hasPlugin('java')) {
+            p.dependencies.add('developmentOnly', 'com.h2database:h2')
+            p.tasks.named('bootRun') { classpath += p.files('src/test/resources') }
+        }
+    }
+}
