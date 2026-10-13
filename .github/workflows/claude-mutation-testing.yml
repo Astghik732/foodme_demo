@@ -91,6 +91,25 @@ jobs:
           # Manual runs check out the PR's merge ref; PR events already use it.
           ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/pull/{0}/merge', inputs.pr_number) || '' }}
 
+      # The PR's merge ref is built when the PR is updated, so it may predate these helper
+      # scripts (and a PR branch may simply not have them). Always take the tooling from the
+      # default branch and drop it into the workspace; it is trusted code, not PR code.
+      - name: Get mutation tooling from the default branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch || 'main' }}
+          path: .tools-src
+          sparse-checkout: .github/mutation
+          sparse-checkout-cone-mode: false
+
+      - name: Install mutation tooling into the workspace
+        run: |
+          set -euo pipefail
+          mkdir -p .github/mutation
+          cp -r .tools-src/.github/mutation/. .github/mutation/
+          rm -rf .tools-src
+          ls -1 .github/mutation
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
