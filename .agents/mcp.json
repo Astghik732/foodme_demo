@@ -9,7 +9,10 @@
     },
     "agentsecrets": {
       "command": "agentsecrets",
-      "args": ["mcp", "serve"]
+      "args": ["mcp", "serve"],
+      "env": {
+        "JIRA_API_TOKEN": "${JIRA_API_TOKEN}"
+      }
     }
   }
 }
